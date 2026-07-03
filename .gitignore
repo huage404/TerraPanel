@@ -1,0 +1,28 @@
+# dependencies
+node_modules
+
+# build outputs
+dist
+.turbo
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# env
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# test
+coverage
