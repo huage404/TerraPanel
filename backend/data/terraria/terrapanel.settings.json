@@ -1,0 +1,13 @@
+{
+  "installPath": "./data/terraria",
+  "dataPath": "./data/terraria",
+  "executable": "TerrariaServer.bin.x86_64",
+  "downloadUrl": "",
+  "serverPort": 7777,
+  "maxPlayers": 8,
+  "worldPath": "",
+  "worldName": "world",
+  "password": "",
+  "motd": "Welcome to TerraPanel Server",
+  "autoSaveMinutes": 10
+}
