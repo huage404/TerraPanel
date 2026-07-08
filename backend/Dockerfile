@@ -17,7 +17,7 @@ RUN pnpm --filter @terrapanel/backend build
 
 FROM ${NODE_IMAGE} AS runner
 RUN apk add --no-cache bash ca-certificates wget
-WORKDIR /app
+WORKDIR /app/backend
 
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -26,6 +26,8 @@ ENV TERRARIA_DATA_PATH=/data/terraria
 
 COPY --from=builder /app/backend/dist ./dist
 COPY --from=builder /app/backend/package.json ./package.json
+# pnpm 在 backend/node_modules 中使用相对 symlink，需保留 monorepo 目录结构
+COPY --from=deps /app/node_modules /app/node_modules
 COPY --from=deps /app/backend/node_modules ./node_modules
 
 RUN mkdir -p /data/terraria/worlds
