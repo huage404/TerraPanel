@@ -9,14 +9,23 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY backend/package.json ./backend/
-RUN pnpm install --frozen-lockfile --filter @terrapanel/backend...
+COPY frontend/package.json ./frontend/
+RUN pnpm install --frozen-lockfile
 
-FROM base AS builder
+FROM base AS builder-backend
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/backend/node_modules ./backend/node_modules
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY backend ./backend
 RUN pnpm --filter @terrapanel/backend build
+
+FROM base AS builder-frontend
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/frontend/node_modules ./frontend/node_modules
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY frontend ./frontend
+ENV VITE_API_BASE=/api
+RUN pnpm --filter @terrapanel/frontend build
 
 FROM ${RUNNER_IMAGE} AS runner
 RUN apt-get update \
@@ -25,18 +34,19 @@ RUN apt-get update \
 WORKDIR /app/backend
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=3847
 ENV TERRARIA_INSTALL_PATH=/data/terraria
 ENV TERRARIA_DATA_PATH=/data/terraria
 
-COPY --from=builder /app/backend/dist ./dist
-COPY --from=builder /app/backend/package.json ./package.json
+COPY --from=builder-backend /app/backend/dist ./dist
+COPY --from=builder-backend /app/backend/package.json ./package.json
+COPY --from=builder-frontend /app/frontend/dist ./public
 # pnpm 在 backend/node_modules 中使用相对 symlink，需保留 monorepo 目录结构
 COPY --from=deps /app/node_modules /app/node_modules
 COPY --from=deps /app/backend/node_modules ./node_modules
 
 RUN mkdir -p /data/terraria/worlds
 
-EXPOSE 3000 7777-7799
+EXPOSE 3847 7777-7799
 
 CMD ["node", "dist/main.js"]

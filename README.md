@@ -43,6 +43,22 @@ TerraPanel/
 └── packages/    # 共享包（预留）
 ```
 
+## 端口说明
+
+部署前请确认以下端口未被占用，并在防火墙 / 路由器中按需放行。
+
+| 端口 | 协议 | 用途 | 何时需要 |
+|------|------|------|----------|
+| **3847** | TCP | Web 管理面板（API + 前端 UI + WebSocket） | Docker 部署、本地后端；可通过 `.env` 中 `PORT` 修改 |
+| **5280** | TCP | 前端开发服务器（Vite） | 仅 `pnpm dev` 本地开发；可通过 `VITE_DEV_PORT` 修改 |
+| **7777–7799** | TCP + UDP | Terraria 游戏实例端口范围 | 玩家连接游戏时；可通过 `TERRARIA_PORT_START` / `TERRARIA_PORT_END` 修改 |
+
+**Docker 部署**只需对外暴露 `PORT`（默认 **3847**）以及 Terraria 端口范围 **7777–7799**（TCP/UDP 均需放行）。
+
+**本地开发**（`pnpm dev`）会同时监听 **5280**（前端）与 **3847**（后端），前端通过 Vite 代理访问后端 API。
+
+> 默认端口刻意避开了常见的 3000、5173 等，以减少与其他开发工具冲突。若需修改，请同步更新 `.env` 中的 `PORT`、`VITE_DEV_PORT`、`CORS_ORIGIN`。
+
 ## 快速开始
 
 ### 环境要求
@@ -64,11 +80,13 @@ cp .env.example .env
 pnpm dev
 ```
 
-- 前端：http://localhost:5173
-- 后端 API：http://localhost:3000/api
-- Swagger：http://localhost:3000/api/docs
+- 前端：http://localhost:5280
+- 后端 API：http://localhost:3847/api
+- Swagger：http://localhost:3847/api/docs
 
 ### Docker 部署（推荐，macOS / Linux 均可）
+
+前后端已打包进同一镜像，`docker compose up` 后即可通过浏览器访问完整管理面板。
 
 ```bash
 cp .env.example .env
@@ -76,6 +94,9 @@ cp .env.example .env
 
 docker compose up -d --build
 ```
+
+- 管理面板：http://localhost:3847（若修改了 `PORT`，以 `.env` 为准）
+- API 文档：http://localhost:3847/api/docs
 
 游戏本体不会打入镜像，首次需在 Web 面板中执行「一键安装」，文件保存在 Docker volume `terraria-data`（挂载路径 `/data/terraria`）。
 
@@ -133,6 +154,8 @@ cp .env.example .env
 
 | 变量 | 说明 |
 |------|------|
+| `PORT` | 后端 / Docker 面板端口，默认 `3847` |
+| `VITE_DEV_PORT` | 本地开发前端端口，默认 `5280` |
 | `TERRARIA_DOWNLOAD_URL` | 官方 Linux 专用服务器 ZIP 下载地址 |
 | `TERRARIA_INSTALL_PATH` | 服务器安装目录 |
 | `TERRARIA_EXECUTABLE` | 可执行文件名，默认 `TerrariaServer.bin.x86_64` |
@@ -145,7 +168,7 @@ cp .env.example .env
 | `TERRARIA_WORLD_SEED` | 世界种子（留空则随机） |
 | `TERRARIA_WORLD_DIFFICULTY` | 世界难度：`0`=普通，`1`=专家，`2`=大师，`3`=旅途 |
 | `VITE_API_BASE` | 前端 API 前缀，默认 `/api`（前后端同域时无需修改） |
-| `CORS_ORIGIN` | 允许跨域的前端地址 |
+| `CORS_ORIGIN` | 本地开发前后端分离时的跨域来源，默认 `http://localhost:5280` |
 
 官方下载地址格式示例：
 

@@ -46,8 +46,8 @@ export interface TerrariaConfig {
 
 export default (): TerrariaConfig => ({
   app: {
-    port: parseInt(process.env.PORT ?? '3000', 10),
-    corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+    port: parseInt(process.env.PORT ?? '3847', 10),
+    corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5280',
   },
   terraria: {
     installPath: process.env.TERRARIA_INSTALL_PATH ?? './data/terraria',
@@ -74,8 +74,8 @@ export default (): TerrariaConfig => ({
 });
 
 export const validationSchema = Joi.object({
-  PORT: Joi.number().default(3000),
-  CORS_ORIGIN: Joi.string().default('http://localhost:5173'),
+  PORT: Joi.number().default(3847),
+  CORS_ORIGIN: Joi.string().default('http://localhost:5280'),
   TERRARIA_INSTALL_PATH: Joi.string().default('./data/terraria'),
   TERRARIA_DATA_PATH: Joi.string().default('./data/terraria'),
   TERRARIA_EXECUTABLE: Joi.string().default('TerrariaServer.bin.x86_64'),

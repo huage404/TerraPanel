@@ -32,11 +32,11 @@ export class AppConfigService implements OnModuleInit {
   }
 
   getAppPort(): number {
-    return this.configService.get<number>('app.port') ?? 3000;
+    return this.configService.get<number>('app.port') ?? 3847;
   }
 
   getCorsOrigin(): string {
-    return this.configService.get<string>('app.corsOrigin') ?? 'http://localhost:5173';
+    return this.configService.get<string>('app.corsOrigin') ?? 'http://localhost:5280';
   }
 
   getRuntimeConfig(): RuntimeTerrariaConfig {

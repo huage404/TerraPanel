@@ -11,12 +11,12 @@ services:
     env_file:
       - .env
     ports:
-      - "${PORT:-3000}:3000"
+      - "${PORT:-3847}:${PORT:-3847}"
       - "${TERRARIA_PORT_START:-7777}-${TERRARIA_PORT_END:-7799}:${TERRARIA_PORT_START:-7777}-${TERRARIA_PORT_END:-7799}/udp"
       - "${TERRARIA_PORT_START:-7777}-${TERRARIA_PORT_END:-7799}:${TERRARIA_PORT_START:-7777}-${TERRARIA_PORT_END:-7799}/tcp"
     environment:
-      PORT: 3000
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      PORT: ${PORT:-3847}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3847}
       TERRARIA_INSTALL_PATH: /data/terraria
       TERRARIA_DATA_PATH: /data/terraria
       TERRARIA_EXECUTABLE: ${TERRARIA_EXECUTABLE:-TerrariaServer.bin.x86_64}
@@ -36,7 +36,7 @@ services:
     volumes:
       - terraria-data:/data/terraria
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/terraria/status"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:$$PORT/api/terraria/status || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

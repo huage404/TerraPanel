@@ -36,7 +36,8 @@ async function bootstrap(): Promise<void> {
   const port = configService.getAppPort();
   await app.listen(port);
 
-  console.log(`TerraPanel API: http://localhost:${port}/api`);
+  console.log(`TerraPanel:     http://localhost:${port}`);
+  console.log(`API:            http://localhost:${port}/api`);
   console.log(`Swagger Docs:   http://localhost:${port}/api/docs`);
   console.log(`WebSocket:      ws://localhost:${port}/terminal`);
 }
