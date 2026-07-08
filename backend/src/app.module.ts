@@ -22,9 +22,7 @@ const serveFrontend = existsSync(join(publicPath, 'index.html'));
       ? [
           ServeStaticModule.forRoot({
             rootPath: publicPath,
-            serveRoot: '/',
-            exclude: ['/api/(.*)', '/socket.io/(.*)'],
-            renderPath: '*',
+            exclude: ['/api/*path', '/socket.io/*path'],
           }),
         ]
       : []),
