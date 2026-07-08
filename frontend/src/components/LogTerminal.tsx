@@ -1,5 +1,5 @@
 import {
-  useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -23,14 +23,23 @@ function streamClass(stream: LogEntry['stream']): string {
 export function LogTerminal({ logs, disabled, onSendCommand }: LogTerminalProps) {
   const [input, setInput] = useState('')
   const viewportRef = useRef<HTMLDivElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
   const stickToBottomRef = useRef(true)
+  const autoScrollingRef = useRef(false)
 
-  useEffect(() => {
-    if (!stickToBottomRef.current || !viewportRef.current) return
-    viewportRef.current.scrollTop = viewportRef.current.scrollHeight
+  useLayoutEffect(() => {
+    if (!stickToBottomRef.current) return
+
+    autoScrollingRef.current = true
+    bottomRef.current?.scrollIntoView({ block: 'end' })
+    requestAnimationFrame(() => {
+      autoScrollingRef.current = false
+    })
   }, [logs])
 
   const handleScroll = () => {
+    if (autoScrollingRef.current) return
+
     const el = viewportRef.current
     if (!el) return
     const distance = el.scrollHeight - el.scrollTop - el.clientHeight
@@ -69,14 +78,17 @@ export function LogTerminal({ logs, disabled, onSendCommand }: LogTerminalProps)
           {logs.length === 0 ? (
             <div className="terminal__empty">等待日志输出...</div>
           ) : (
-            logs.map((entry) => (
-              <div key={entry.id} className={`terminal-line ${streamClass(entry.stream)}`}>
-                <span className="terminal-line__time">
-                  [{formatTime(entry.timestamp)}]
-                </span>
-                <span className="terminal-line__text">{entry.message}</span>
-              </div>
-            ))
+            <>
+              {logs.map((entry) => (
+                <div key={entry.id} className={`terminal-line ${streamClass(entry.stream)}`}>
+                  <span className="terminal-line__time">
+                    [{formatTime(entry.timestamp)}]
+                  </span>
+                  <span className="terminal-line__text">{entry.message}</span>
+                </div>
+              ))}
+              <div ref={bottomRef} aria-hidden="true" />
+            </>
           )}
         </div>
 
