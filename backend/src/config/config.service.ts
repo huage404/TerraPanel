@@ -3,7 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { accessSync, constants } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { TerrariaEnvConfig } from './configuration';
+import {
+  PersistedTerrariaSettings,
+  TerrariaEnvConfig,
+} from './configuration';
 import { UpdateConfigDto } from './dto/update-config.dto';
 
 export interface RuntimeTerrariaConfig extends TerrariaEnvConfig {
@@ -13,10 +16,14 @@ export interface RuntimeTerrariaConfig extends TerrariaEnvConfig {
 
 @Injectable()
 export class AppConfigService implements OnModuleInit {
+  /** 来自 .env / 容器环境变量，启动后不变 */
+  private readonly envConfig: TerrariaEnvConfig;
+  /** 合并持久化设置后的有效配置 */
   private runtimeConfig: TerrariaEnvConfig;
 
   constructor(private readonly configService: ConfigService) {
-    this.runtimeConfig = this.configService.get<TerrariaEnvConfig>('terraria')!;
+    this.envConfig = this.configService.get<TerrariaEnvConfig>('terraria')!;
+    this.runtimeConfig = { ...this.envConfig };
   }
 
   async onModuleInit(): Promise<void> {
@@ -34,26 +41,26 @@ export class AppConfigService implements OnModuleInit {
 
   getRuntimeConfig(): RuntimeTerrariaConfig {
     return {
-      ...this.runtimeConfig,
+      ...this.getEffectiveConfig(),
       installed: this.isInstalledSync(),
       executablePath: this.getExecutablePath(),
     };
   }
 
   getInstallPath(): string {
-    return this.runtimeConfig.installPath;
+    return this.envConfig.installPath;
   }
 
   getDataPath(): string {
-    return this.runtimeConfig.dataPath;
+    return this.envConfig.dataPath;
   }
 
   getExecutablePath(): string {
-    return join(this.runtimeConfig.installPath, this.runtimeConfig.executable);
+    return join(this.envConfig.installPath, this.envConfig.executable);
   }
 
   getDownloadUrl(): string {
-    return this.runtimeConfig.downloadUrl;
+    return this.envConfig.downloadUrl;
   }
 
   isInstalledSync(): boolean {
@@ -66,12 +73,7 @@ export class AppConfigService implements OnModuleInit {
   }
 
   async isInstalled(): Promise<boolean> {
-    try {
-      accessSync(this.getExecutablePath(), constants.X_OK);
-      return true;
-    } catch {
-      return false;
-    }
+    return this.isInstalledSync();
   }
 
   async updateRuntimeConfig(dto: UpdateConfigDto): Promise<RuntimeTerrariaConfig> {
@@ -83,34 +85,9 @@ export class AppConfigService implements OnModuleInit {
     return this.getRuntimeConfig();
   }
 
-  private getSettingsFilePath(): string {
-    return join(this.runtimeConfig.dataPath, 'terrapanel.settings.json');
-  }
-
-  private async ensureDataDir(): Promise<void> {
-    await mkdir(this.runtimeConfig.dataPath, { recursive: true });
-    await mkdir(this.runtimeConfig.installPath, { recursive: true });
-  }
-
-  private async loadRuntimeConfig(): Promise<void> {
-    try {
-      const raw = await readFile(this.getSettingsFilePath(), 'utf-8');
-      const saved = JSON.parse(raw) as Partial<TerrariaEnvConfig>;
-      this.runtimeConfig = {
-        ...this.runtimeConfig,
-        ...saved,
-      };
-    } catch {
-      await this.persistRuntimeConfig();
-    }
-  }
-
-  private async persistRuntimeConfig(): Promise<void> {
-    const payload: TerrariaEnvConfig = {
-      installPath: this.runtimeConfig.installPath,
-      dataPath: this.runtimeConfig.dataPath,
-      executable: this.runtimeConfig.executable,
-      downloadUrl: this.runtimeConfig.downloadUrl,
+  private getEffectiveConfig(): TerrariaEnvConfig {
+    return {
+      ...this.envConfig,
       serverPort: this.runtimeConfig.serverPort,
       maxPlayers: this.runtimeConfig.maxPlayers,
       worldPath: this.runtimeConfig.worldPath,
@@ -119,6 +96,48 @@ export class AppConfigService implements OnModuleInit {
       motd: this.runtimeConfig.motd,
       autoSaveMinutes: this.runtimeConfig.autoSaveMinutes,
     };
+  }
+
+  private getSettingsFilePath(): string {
+    return join(this.envConfig.dataPath, 'terrapanel.settings.json');
+  }
+
+  private async ensureDataDir(): Promise<void> {
+    await mkdir(this.envConfig.dataPath, { recursive: true });
+    await mkdir(this.envConfig.installPath, { recursive: true });
+  }
+
+  private async loadRuntimeConfig(): Promise<void> {
+    try {
+      const raw = await readFile(this.getSettingsFilePath(), 'utf-8');
+      const saved = JSON.parse(raw) as Partial<PersistedTerrariaSettings>;
+      this.runtimeConfig = {
+        ...this.envConfig,
+        ...this.pickPersistedSettings(saved),
+      };
+    } catch {
+      this.runtimeConfig = { ...this.envConfig };
+      await this.persistRuntimeConfig();
+    }
+  }
+
+  private async persistRuntimeConfig(): Promise<void> {
+    const payload = this.pickPersistedSettings(this.runtimeConfig);
     await writeFile(this.getSettingsFilePath(), JSON.stringify(payload, null, 2));
+  }
+
+  private pickPersistedSettings(
+    source: Partial<TerrariaEnvConfig>,
+  ): PersistedTerrariaSettings {
+    return {
+      serverPort: source.serverPort ?? this.envConfig.serverPort,
+      maxPlayers: source.maxPlayers ?? this.envConfig.maxPlayers,
+      worldPath: source.worldPath ?? this.envConfig.worldPath,
+      worldName: source.worldName ?? this.envConfig.worldName,
+      password: source.password ?? this.envConfig.password,
+      motd: source.motd ?? this.envConfig.motd,
+      autoSaveMinutes:
+        source.autoSaveMinutes ?? this.envConfig.autoSaveMinutes,
+    };
   }
 }

@@ -19,6 +19,18 @@ export interface TerrariaEnvConfig {
   autoSaveMinutes: number;
 }
 
+/** 仅持久化可通过 API 修改的运行参数，部署相关项始终来自环境变量 */
+export type PersistedTerrariaSettings = Pick<
+  TerrariaEnvConfig,
+  | 'serverPort'
+  | 'maxPlayers'
+  | 'worldPath'
+  | 'worldName'
+  | 'password'
+  | 'motd'
+  | 'autoSaveMinutes'
+>;
+
 export interface TerrariaConfig {
   app: AppConfig;
   terraria: TerrariaEnvConfig;
