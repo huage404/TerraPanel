@@ -25,6 +25,15 @@ export class ConfigResponseDto {
   @ApiProperty()
   worldName: string;
 
+  @ApiProperty({ description: '1=小, 2=中, 3=大' })
+  worldSize: number;
+
+  @ApiProperty()
+  worldSeed: string;
+
+  @ApiProperty({ description: '0=普通, 1=专家, 2=大师, 3=旅途' })
+  worldDifficulty: number;
+
   @ApiProperty()
   password: string;
 

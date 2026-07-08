@@ -9,7 +9,7 @@
 | 环境 | 管理面板 | Terraria 专用服务器 | 说明 |
 |------|:--------:|:-------------------:|------|
 | **Linux**（原生） | ✅ | ✅ | 推荐的生产部署方式 |
-| **Linux**（Docker） | ✅ | ✅ | 使用 `docker compose`，镜像基于 Alpine Linux |
+| **Linux**（Docker） | ✅ | ✅ | 使用 `docker compose`，镜像基于 Debian（glibc，兼容 Terraria 二进制） |
 | **macOS**（Docker） | ✅ | ✅ | 通过 Docker Desktop 运行 Linux 容器，功能与 Linux 部署一致 |
 
 ### 部分支持
@@ -79,9 +79,11 @@ docker compose up -d --build
 
 游戏本体不会打入镜像，首次需在 Web 面板中执行「一键安装」，文件保存在 Docker volume `terraria-data`（挂载路径 `/data/terraria`）。
 
+首次启动时若世界文件不存在，TerraPanel 会根据配置自动生成 `serverconfig.txt`，并通过 `-config` 参数让 Terraria 按配置创建世界。
+
 #### Docker 构建失败：`context deadline exceeded`
 
-说明无法从 Docker Hub 拉取 `node:22-alpine`（国内网络常见）。任选一种方式：
+说明无法从 Docker Hub 拉取 `node:22-bookworm-slim`（国内网络常见）。任选一种方式：
 
 **方式 A：配置 Docker Desktop 镜像加速（推荐）**
 
@@ -100,7 +102,7 @@ Apply & Restart 后重试 `docker compose up -d --build`。
 **方式 B：在项目 `.env` 中指定镜像源**
 
 ```bash
-NODE_IMAGE=docker.m.daocloud.io/library/node:22-alpine
+NODE_IMAGE=docker.m.daocloud.io/library/node:22-bookworm-slim
 ```
 
 然后重新构建：
@@ -112,8 +114,8 @@ docker compose up -d --build
 **方式 C：先手动拉取再构建**
 
 ```bash
-docker pull docker.m.daocloud.io/library/node:22-alpine
-docker tag docker.m.daocloud.io/library/node:22-alpine node:22-alpine
+docker pull docker.m.daocloud.io/library/node:22-bookworm-slim
+docker tag docker.m.daocloud.io/library/node:22-bookworm-slim node:22-bookworm-slim
 docker compose up -d --build
 ```
 
@@ -133,6 +135,10 @@ cp .env.example .env
 | `TERRARIA_EXECUTABLE` | 可执行文件名，默认 `TerrariaServer.bin.x86_64` |
 | `TERRARIA_SERVER_PORT` | 游戏端口，默认 `7777` |
 | `TERRARIA_MAX_PLAYERS` | 最大玩家数 |
+| `TERRARIA_WORLD_NAME` | 世界名称（自动创建时使用） |
+| `TERRARIA_WORLD_SIZE` | 世界尺寸：`1`=小，`2`=中，`3`=大（首次自动创建时生效） |
+| `TERRARIA_WORLD_SEED` | 世界种子（留空则随机） |
+| `TERRARIA_WORLD_DIFFICULTY` | 世界难度：`0`=普通，`1`=专家，`2`=大师，`3`=旅途 |
 | `VITE_API_BASE` | 前端 API 前缀，默认 `/api`（前后端同域时无需修改） |
 | `CORS_ORIGIN` | 允许跨域的前端地址 |
 
@@ -164,6 +170,9 @@ pnpm --filter @terrapanel/frontend dev
 | POST | `/api/terraria/stop` | 停止 |
 | POST | `/api/terraria/restart` | 重启 |
 | POST | `/api/terraria/install` | 一键安装 |
+| GET | `/api/worlds` | 世界列表（扫描 `.wld`） |
+| POST | `/api/worlds` | 创建世界并启动生成 |
+| PATCH | `/api/worlds/active` | 切换当前世界 |
 | GET | `/api/config` | 读取配置 |
 
 WebSocket 命名空间：`/terminal`（实时日志、状态、安装进度）

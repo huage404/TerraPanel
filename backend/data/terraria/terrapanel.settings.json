@@ -7,6 +7,9 @@
   "maxPlayers": 8,
   "worldPath": "",
   "worldName": "world",
+  "worldSize": 2,
+  "worldSeed": "",
+  "worldDifficulty": 0,
   "password": "",
   "motd": "Welcome to TerraPanel Server",
   "autoSaveMinutes": 10

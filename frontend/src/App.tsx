@@ -1,7 +1,9 @@
 import { ControlPanel } from './components/ControlPanel'
+import { CreateWorldModal } from './components/CreateWorldModal'
 import { InstallPanel } from './components/InstallPanel'
 import { LogTerminal } from './components/LogTerminal'
 import { StatusCards } from './components/StatusCards'
+import { WorldPanel } from './components/WorldPanel'
 import { useTerrariaPanel } from './hooks/useTerrariaPanel'
 import './App.css'
 
@@ -10,6 +12,9 @@ function App() {
     status,
     logs,
     installProgress,
+    worlds,
+    worldsLoading,
+    createModalOpen,
     connected,
     actionLoading,
     error,
@@ -17,9 +22,15 @@ function App() {
     stop,
     restart,
     install,
+    createWorld,
+    selectWorld,
+    openCreateModal,
+    closeCreateModal,
     sendCommand,
     clearError,
   } = useTerrariaPanel()
+
+  const hasWorlds = worlds.length > 0
 
   return (
     <div className="app">
@@ -47,13 +58,25 @@ function App() {
       <main className="app-main">
         <StatusCards status={status} connected={connected} />
 
+        <WorldPanel
+          installed={status.installed}
+          status={status.status}
+          worlds={worlds}
+          loading={worldsLoading}
+          actionLoading={actionLoading}
+          onCreateClick={openCreateModal}
+          onSelectWorld={selectWorld}
+        />
+
         <div className="dashboard-grid">
           <ControlPanel
             status={status}
+            hasWorlds={hasWorlds}
             loading={actionLoading}
             onStart={start}
             onStop={stop}
             onRestart={restart}
+            onCreateClick={openCreateModal}
           />
           <InstallPanel
             installed={status.installed}
@@ -69,6 +92,13 @@ function App() {
           onSendCommand={sendCommand}
         />
       </main>
+
+      <CreateWorldModal
+        open={createModalOpen}
+        loading={actionLoading === 'createWorld'}
+        onClose={closeCreateModal}
+        onSubmit={createWorld}
+      />
     </div>
   )
 }

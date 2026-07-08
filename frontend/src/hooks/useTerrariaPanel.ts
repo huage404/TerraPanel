@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'
 import { terrariaApi } from '../api/terraria'
+import { worldsApi } from '../api/worlds'
 import type {
   InstallProgressDto,
   LogEntry,
   ServerStatusDto,
 } from '../types/terraria'
+import type { CreateWorldPayload, WorldSummary } from '../types/world'
 
 const DEFAULT_INSTALL: InstallProgressDto = {
   phase: 'idle',
@@ -29,11 +31,31 @@ export function useTerrariaPanel() {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [installProgress, setInstallProgress] =
     useState<InstallProgressDto>(DEFAULT_INSTALL)
+  const [worlds, setWorlds] = useState<WorldSummary[]>([])
+  const [worldsLoading, setWorldsLoading] = useState(false)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
   const [connected, setConnected] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [installPolling, setInstallPolling] = useState(false)
   const socketRef = useRef<Socket | null>(null)
+
+  const refreshWorlds = useCallback(async () => {
+    if (!status.installed) {
+      setWorlds([])
+      return
+    }
+
+    setWorldsLoading(true)
+    try {
+      const result = await worldsApi.list()
+      setWorlds(result.worlds)
+    } catch {
+      // ignore transient errors during polling
+    } finally {
+      setWorldsLoading(false)
+    }
+  }, [status.installed])
 
   useEffect(() => {
     const socket = io('/terminal', {
@@ -75,6 +97,10 @@ export function useTerrariaPanel() {
   }, [])
 
   useEffect(() => {
+    void refreshWorlds()
+  }, [refreshWorlds, installProgress.phase])
+
+  useEffect(() => {
     const pollInstallStatus = () => {
       terrariaApi.getInstallStatus().then(setInstallProgress).catch(() => undefined)
     }
@@ -108,6 +134,24 @@ export function useTerrariaPanel() {
       }
     }
   }, [installProgress.phase])
+
+  useEffect(() => {
+    const shouldPollWorlds =
+      status.installed &&
+      (status.status === 'starting' ||
+        status.status === 'running' ||
+        actionLoading === 'createWorld')
+
+    if (!shouldPollWorlds) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      void refreshWorlds()
+    }, 3000)
+
+    return () => window.clearInterval(timer)
+  }, [actionLoading, refreshWorlds, status.installed, status.status])
 
   const runAction = useCallback(
     async (key: string, action: () => Promise<ServerStatusDto | InstallProgressDto>) => {
@@ -151,6 +195,34 @@ export function useTerrariaPanel() {
     [runAction],
   )
 
+  const createWorld = useCallback(async (payload: CreateWorldPayload) => {
+    setActionLoading('createWorld')
+    setError(null)
+    try {
+      const result = await worldsApi.create(payload)
+      setWorlds(result.worlds)
+      setStatus(result.status)
+      setCreateModalOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '创建世界失败')
+    } finally {
+      setActionLoading(null)
+    }
+  }, [])
+
+  const selectWorld = useCallback(async (path: string) => {
+    setActionLoading('selectWorld')
+    setError(null)
+    try {
+      const result = await worldsApi.select(path)
+      setWorlds(result.worlds)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '切换世界失败')
+    } finally {
+      setActionLoading(null)
+    }
+  }, [])
+
   const sendCommand = useCallback((command: string) => {
     const trimmed = command.trim()
     if (!trimmed) return
@@ -160,11 +232,16 @@ export function useTerrariaPanel() {
   }, [])
 
   const clearError = useCallback(() => setError(null), [])
+  const openCreateModal = useCallback(() => setCreateModalOpen(true), [])
+  const closeCreateModal = useCallback(() => setCreateModalOpen(false), [])
 
   return {
     status,
     logs,
     installProgress,
+    worlds,
+    worldsLoading,
+    createModalOpen,
     connected,
     actionLoading,
     error,
@@ -172,6 +249,10 @@ export function useTerrariaPanel() {
     stop,
     restart,
     install,
+    createWorld,
+    selectWorld,
+    openCreateModal,
+    closeCreateModal,
     sendCommand,
     clearError,
   }

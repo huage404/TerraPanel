@@ -1,0 +1,46 @@
+import type { ServerStatusDto } from './terraria'
+
+export interface WorldSummary {
+  fileName: string
+  worldName: string
+  path: string
+  sizeBytes: number
+  modifiedAt: string
+  active: boolean
+}
+
+export interface WorldsResponse {
+  worlds: WorldSummary[]
+  activeWorldPath: string | null
+}
+
+export interface CreateWorldPayload {
+  worldName: string
+  worldSize: number
+  worldSeed?: string
+  worldDifficulty: number
+}
+
+export interface CreateWorldResponse extends WorldsResponse {
+  status: ServerStatusDto
+}
+
+export const WORLD_SIZE_OPTIONS = [
+  { value: 1, label: '小 (4200×1200)' },
+  { value: 2, label: '中 (6400×1800)' },
+  { value: 3, label: '大 (8400×2400)' },
+] as const
+
+export const WORLD_DIFFICULTY_OPTIONS = [
+  { value: 0, label: '普通' },
+  { value: 1, label: '专家' },
+  { value: 2, label: '大师' },
+  { value: 3, label: '旅途' },
+] as const
+
+export const DEFAULT_CREATE_WORLD_FORM: CreateWorldPayload = {
+  worldName: 'world',
+  worldSize: 2,
+  worldSeed: '',
+  worldDifficulty: 0,
+}

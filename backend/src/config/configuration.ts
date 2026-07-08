@@ -14,6 +14,9 @@ export interface TerrariaEnvConfig {
   maxPlayers: number;
   worldPath: string;
   worldName: string;
+  worldSize: number;
+  worldSeed: string;
+  worldDifficulty: number;
   password: string;
   motd: string;
   autoSaveMinutes: number;
@@ -26,6 +29,9 @@ export type PersistedTerrariaSettings = Pick<
   | 'maxPlayers'
   | 'worldPath'
   | 'worldName'
+  | 'worldSize'
+  | 'worldSeed'
+  | 'worldDifficulty'
   | 'password'
   | 'motd'
   | 'autoSaveMinutes'
@@ -51,6 +57,9 @@ export default (): TerrariaConfig => ({
     maxPlayers: parseInt(process.env.TERRARIA_MAX_PLAYERS ?? '8', 10),
     worldPath: process.env.TERRARIA_WORLD_PATH ?? '',
     worldName: process.env.TERRARIA_WORLD_NAME ?? 'world',
+    worldSize: parseInt(process.env.TERRARIA_WORLD_SIZE ?? '2', 10),
+    worldSeed: process.env.TERRARIA_WORLD_SEED ?? '',
+    worldDifficulty: parseInt(process.env.TERRARIA_WORLD_DIFFICULTY ?? '0', 10),
     password: process.env.TERRARIA_PASSWORD ?? '',
     motd: process.env.TERRARIA_MOTD ?? 'Welcome to TerraPanel Server',
     autoSaveMinutes: parseInt(
@@ -71,6 +80,9 @@ export const validationSchema = Joi.object({
   TERRARIA_MAX_PLAYERS: Joi.number().min(1).max(255).default(8),
   TERRARIA_WORLD_PATH: Joi.string().allow('').default(''),
   TERRARIA_WORLD_NAME: Joi.string().default('world'),
+  TERRARIA_WORLD_SIZE: Joi.number().valid(1, 2, 3).default(2),
+  TERRARIA_WORLD_SEED: Joi.string().allow('').default(''),
+  TERRARIA_WORLD_DIFFICULTY: Joi.number().valid(0, 1, 2, 3).default(0),
   TERRARIA_PASSWORD: Joi.string().allow('').default(''),
   TERRARIA_MOTD: Joi.string().default('Welcome to TerraPanel Server'),
   TERRARIA_AUTOSAVE_MINUTES: Joi.number().min(1).default(10),

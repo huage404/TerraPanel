@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
       args:
-        NODE_IMAGE: ${NODE_IMAGE:-node:22-alpine}
+        NODE_IMAGE: ${NODE_IMAGE:-node:22-bookworm-slim}
     container_name: terrapanel
     restart: unless-stopped
     env_file:
@@ -24,6 +24,9 @@ services:
       TERRARIA_MAX_PLAYERS: ${TERRARIA_MAX_PLAYERS:-8}
       TERRARIA_WORLD_PATH: ${TERRARIA_WORLD_PATH:-}
       TERRARIA_WORLD_NAME: ${TERRARIA_WORLD_NAME:-world}
+      TERRARIA_WORLD_SIZE: ${TERRARIA_WORLD_SIZE:-2}
+      TERRARIA_WORLD_SEED: ${TERRARIA_WORLD_SEED:-}
+      TERRARIA_WORLD_DIFFICULTY: ${TERRARIA_WORLD_DIFFICULTY:-0}
       TERRARIA_PASSWORD: ${TERRARIA_PASSWORD:-}
       TERRARIA_MOTD: ${TERRARIA_MOTD:-Welcome to TerraPanel Server}
       TERRARIA_AUTOSAVE_MINUTES: ${TERRARIA_AUTOSAVE_MINUTES:-10}

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppConfigService } from '../config/config.service';
 import { ProcessManagerService } from './process-manager.service';
+import { ServerConfigService } from './server-config.service';
 
 describe('ProcessManagerService', () => {
   let service: ProcessManagerService;
@@ -11,6 +12,16 @@ describe('ProcessManagerService', () => {
       imports: [EventEmitterModule.forRoot()],
       providers: [
         ProcessManagerService,
+        ServerConfigService,
+        {
+          provide: ServerConfigService,
+          useValue: {
+            resolveWorldPath: jest
+              .fn()
+              .mockReturnValue('/tmp/worlds/world.wld'),
+            writeConfig: jest.fn().mockResolvedValue('/tmp/serverconfig.txt'),
+          },
+        },
         {
           provide: AppConfigService,
           useValue: {
@@ -23,6 +34,9 @@ describe('ProcessManagerService', () => {
               maxPlayers: 8,
               worldPath: '',
               worldName: 'world',
+              worldSize: 2,
+              worldSeed: '',
+              worldDifficulty: 0,
               password: '',
               motd: 'test',
               dataPath: '/tmp',

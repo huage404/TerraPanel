@@ -7,7 +7,6 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ChildProcess, spawn } from 'node:child_process';
 import { access, constants } from 'node:fs/promises';
-import { join } from 'node:path';
 import {
   TERRARIA_LOG,
   TERRARIA_STATUS,
@@ -18,6 +17,7 @@ import {
   LogStream,
 } from '../common/interfaces/log-entry.interface';
 import { AppConfigService } from '../config/config.service';
+import { ServerConfigService } from './server-config.service';
 
 @Injectable()
 export class ProcessManagerService implements OnModuleDestroy {
@@ -32,6 +32,7 @@ export class ProcessManagerService implements OnModuleDestroy {
 
   constructor(
     private readonly configService: AppConfigService,
+    private readonly serverConfigService: ServerConfigService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -84,7 +85,18 @@ export class ProcessManagerService implements OnModuleDestroy {
     const executablePath = this.configService.getExecutablePath();
     const installPath = this.configService.getInstallPath();
     const config = this.configService.getRuntimeConfig();
-    const args = this.buildArgs(config);
+    const worldPath = this.serverConfigService.resolveWorldPath(config);
+    const configPath = await this.serverConfigService.writeConfig();
+    const args = ['-config', configPath];
+
+    try {
+      await access(worldPath, constants.F_OK);
+    } catch {
+      this.appendLog(
+        'system',
+        `世界文件不存在，将根据 ${configPath} 自动创建世界（尺寸=${config.worldSize}，难度=${config.worldDifficulty}${config.worldSeed ? `，种子=${config.worldSeed}` : ''}）`,
+      );
+    }
 
     this.status = ServerStatus.STARTING;
     this.emitStatus();
@@ -113,8 +125,12 @@ export class ProcessManagerService implements OnModuleDestroy {
 
     this.process.on('error', (error) => {
       this.logger.error(`进程启动失败: ${error.message}`);
+      const hint =
+        error.message.includes('ENOENT') || error.message.includes('ENOEXEC')
+          ? '（Terraria 二进制无法执行，Docker 请确认使用 Debian 基础镜像而非 Alpine）'
+          : '';
       this.status = ServerStatus.ERROR;
-      this.appendLog('system', `启动失败: ${error.message}`);
+      this.appendLog('system', `启动失败: ${error.message}${hint}`);
       this.cleanupProcessState();
       this.emitStatus();
     });
@@ -174,33 +190,6 @@ export class ProcessManagerService implements OnModuleDestroy {
 
     this.process.stdin.write(`${command}\n`);
     this.appendLog('system', `> ${command}`);
-  }
-
-  private buildArgs(config: ReturnType<AppConfigService['getRuntimeConfig']>): string[] {
-    const args = [
-      '-port',
-      String(config.serverPort),
-      '-maxplayers',
-      String(config.maxPlayers),
-      '-motd',
-      config.motd,
-      '-autoshare',
-      '0',
-      '-secure',
-      '1',
-    ];
-
-    if (config.password) {
-      args.push('-password', config.password);
-    }
-
-    if (config.worldPath) {
-      args.push('-world', config.worldPath);
-    } else {
-      args.push('-world', join(config.dataPath, 'worlds', `${config.worldName}.wld`));
-    }
-
-    return args;
   }
 
   private handleOutput(stream: LogStream, raw: string): void {

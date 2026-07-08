@@ -1,4 +1,4 @@
-ARG NODE_IMAGE=node:22-alpine
+ARG NODE_IMAGE=node:22-bookworm-slim
 FROM ${NODE_IMAGE} AS base
 RUN corepack enable && corepack prepare pnpm@10.12.1 --activate
 WORKDIR /app
@@ -16,7 +16,9 @@ COPY backend ./backend
 RUN pnpm --filter @terrapanel/backend build
 
 FROM ${NODE_IMAGE} AS runner
-RUN apk add --no-cache bash ca-certificates wget
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends bash ca-certificates wget libgcc-s1 libstdc++6 \
+  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app/backend
 
 ENV NODE_ENV=production

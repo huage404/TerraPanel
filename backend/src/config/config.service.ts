@@ -92,6 +92,9 @@ export class AppConfigService implements OnModuleInit {
       maxPlayers: this.runtimeConfig.maxPlayers,
       worldPath: this.runtimeConfig.worldPath,
       worldName: this.runtimeConfig.worldName,
+      worldSize: this.runtimeConfig.worldSize,
+      worldSeed: this.runtimeConfig.worldSeed,
+      worldDifficulty: this.runtimeConfig.worldDifficulty,
       password: this.runtimeConfig.password,
       motd: this.runtimeConfig.motd,
       autoSaveMinutes: this.runtimeConfig.autoSaveMinutes,
@@ -134,6 +137,10 @@ export class AppConfigService implements OnModuleInit {
       maxPlayers: source.maxPlayers ?? this.envConfig.maxPlayers,
       worldPath: source.worldPath ?? this.envConfig.worldPath,
       worldName: source.worldName ?? this.envConfig.worldName,
+      worldSize: source.worldSize ?? this.envConfig.worldSize,
+      worldSeed: source.worldSeed ?? this.envConfig.worldSeed,
+      worldDifficulty:
+        source.worldDifficulty ?? this.envConfig.worldDifficulty,
       password: source.password ?? this.envConfig.password,
       motd: source.motd ?? this.envConfig.motd,
       autoSaveMinutes:
