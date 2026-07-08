@@ -56,9 +56,9 @@ TerraPanel/
 ```bash
 pnpm install
 
-# 配置后端环境变量
-cp backend/.env.example backend/.env
-# 编辑 backend/.env，至少设置 TERRARIA_DOWNLOAD_URL
+# 配置环境变量（全项目共用根目录 .env）
+cp .env.example .env
+# 编辑 .env，至少设置 TERRARIA_DOWNLOAD_URL
 
 # 同时启动前后端（建议在 Linux 上使用）
 pnpm dev
@@ -120,7 +120,11 @@ docker compose up -d --build
 
 ## 配置说明
 
-主要环境变量（详见 `backend/.env.example`）：
+全项目统一使用**根目录 `.env`**（本地开发与 Docker 部署共用）。复制模板：
+
+```bash
+cp .env.example .env
+```
 
 | 变量 | 说明 |
 |------|------|
@@ -129,6 +133,8 @@ docker compose up -d --build
 | `TERRARIA_EXECUTABLE` | 可执行文件名，默认 `TerrariaServer.bin.x86_64` |
 | `TERRARIA_SERVER_PORT` | 游戏端口，默认 `7777` |
 | `TERRARIA_MAX_PLAYERS` | 最大玩家数 |
+| `VITE_API_BASE` | 前端 API 前缀，默认 `/api`（前后端同域时无需修改） |
+| `CORS_ORIGIN` | 允许跨域的前端地址 |
 
 官方下载地址格式示例：
 
