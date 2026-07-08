@@ -6,9 +6,9 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import AdmZip from 'adm-zip';
 import axios from 'axios';
-import { createWriteStream } from 'node:fs';
-import { chmod, mkdir, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { createWriteStream, existsSync } from 'node:fs';
+import { chmod, cp, mkdir, readdir, rename, rm } from 'node:fs/promises';
+import { dirname, join, relative } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { TERRARIA_INSTALL_PROGRESS } from '../common/constants/events';
 import { InstallPhase } from '../common/enums/install-status.enum';
@@ -83,6 +83,13 @@ export class InstallService {
       await this.extractArchive(tempZipPath, installPath);
 
       await this.updateProgress(
+        InstallPhase.EXTRACTING,
+        80,
+        '正在整理服务器文件...',
+      );
+      await this.flattenServerLayout(installPath);
+
+      await this.updateProgress(
         InstallPhase.CHMOD,
         90,
         '正在设置可执行权限...',
@@ -145,6 +152,113 @@ export class InstallService {
   ): Promise<void> {
     const zip = new AdmZip(zipPath);
     zip.extractAllTo(destination, true);
+  }
+
+  /**
+   * 官方压缩包结构为 `{version}/Linux/TerrariaServer.bin.x86_64`，
+   * 需将 Linux 目录内容提升到安装根目录。
+   */
+  private async flattenServerLayout(installPath: string): Promise<void> {
+    const executableName = this.configService.getRuntimeConfig().executable;
+
+    if (existsSync(join(installPath, executableName))) {
+      return;
+    }
+
+    const executablePath = await this.findFileByName(
+      installPath,
+      executableName,
+    );
+    if (!executablePath) {
+      throw new Error(
+        `解压后未找到 ${executableName}，请确认 TERRARIA_DOWNLOAD_URL 为官方 Linux 专用服务器压缩包`,
+      );
+    }
+
+    const serverDir = dirname(executablePath);
+    if (serverDir === installPath) {
+      return;
+    }
+
+    this.logger.log(`整理安装目录: ${serverDir} -> ${installPath}`);
+    await this.moveDirectoryContents(serverDir, installPath);
+    await this.removeExtractTree(installPath, serverDir);
+  }
+
+  private async findFileByName(
+    dir: string,
+    fileName: string,
+  ): Promise<string | null> {
+    const entries = await readdir(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) {
+        continue;
+      }
+
+      const fullPath = join(dir, entry.name);
+
+      if (entry.isFile() && entry.name === fileName) {
+        return fullPath;
+      }
+
+      if (entry.isDirectory()) {
+        const nested = await this.findFileByName(fullPath, fileName);
+        if (nested) {
+          return nested;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private async moveDirectoryContents(
+    fromDir: string,
+    toDir: string,
+  ): Promise<void> {
+    const entries = await readdir(fromDir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const src = join(fromDir, entry.name);
+      const dest = join(toDir, entry.name);
+      await this.moveEntry(src, dest);
+    }
+  }
+
+  private async moveEntry(src: string, dest: string): Promise<void> {
+    try {
+      await rename(src, dest);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === 'EEXIST') {
+        await rm(dest, { recursive: true, force: true });
+        await rename(src, dest);
+        return;
+      }
+      if (code === 'EXDEV') {
+        await cp(src, dest, { recursive: true });
+        await rm(src, { recursive: true, force: true });
+        return;
+      }
+      throw error;
+    }
+  }
+
+  private async removeExtractTree(
+    installPath: string,
+    serverDir: string,
+  ): Promise<void> {
+    const rel = relative(installPath, serverDir);
+    if (rel.startsWith('..') || rel === '') {
+      return;
+    }
+
+    let current = serverDir;
+    while (current !== installPath) {
+      await rm(current, { recursive: true, force: true });
+      current = dirname(current);
+    }
   }
 
   private async chmodExecutable(): Promise<void> {
