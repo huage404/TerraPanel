@@ -38,9 +38,10 @@ export class InstallService {
     return this.installing;
   }
 
-  async install(): Promise<void> {
+  /** 同步启动安装并立即返回当前进度（供 API 响应） */
+  beginInstall(): InstallProgressDto {
     if (this.installing) {
-      throw new BadRequestException('安装任务正在进行中');
+      return this.getProgress();
     }
 
     const downloadUrl = this.configService.getDownloadUrl();
@@ -51,16 +52,26 @@ export class InstallService {
     }
 
     this.installing = true;
+    this.updateProgress(
+      InstallPhase.DOWNLOADING,
+      0,
+      '开始下载 Terraria 服务器压缩包...',
+    );
+
+    void this.runInstall(downloadUrl).catch((error) => {
+      const message = error instanceof Error ? error.message : '未知错误';
+      this.logger.error(`安装任务异常: ${message}`);
+    });
+
+    return this.getProgress();
+  }
+
+  private async runInstall(downloadUrl: string): Promise<void> {
     const installPath = this.configService.getInstallPath();
     const tempZipPath = join(installPath, '.terrapanel-download.zip');
 
     try {
       await mkdir(installPath, { recursive: true });
-      await this.updateProgress(
-        InstallPhase.DOWNLOADING,
-        0,
-        '开始下载 Terraria 服务器压缩包...',
-      );
 
       await this.downloadFile(downloadUrl, tempZipPath);
 
@@ -90,7 +101,6 @@ export class InstallService {
       this.logger.error(`安装失败: ${message}`);
       await rm(tempZipPath, { force: true });
       this.updateProgress(InstallPhase.FAILED, 0, '安装失败', message);
-      throw new BadRequestException(`安装失败: ${message}`);
     } finally {
       this.installing = false;
     }

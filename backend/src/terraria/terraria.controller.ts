@@ -75,12 +75,7 @@ export class TerrariaController {
   @ApiOperation({ summary: '一键安装 Terraria 服务器（异步）' })
   @ApiAcceptedResponse({ type: InstallProgressDto })
   install(): InstallProgressDto {
-    if (this.terrariaService.isInstalling()) {
-      return this.terrariaService.getInstallStatus();
-    }
-
-    void this.terrariaService.install().catch(() => undefined);
-    return this.terrariaService.getInstallStatus();
+    return this.terrariaService.beginInstall();
   }
 
   @Get('install/status')

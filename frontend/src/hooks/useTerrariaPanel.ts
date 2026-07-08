@@ -32,6 +32,7 @@ export function useTerrariaPanel() {
   const [connected, setConnected] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [installPolling, setInstallPolling] = useState(false)
   const socketRef = useRef<Socket | null>(null)
 
   useEffect(() => {
@@ -74,19 +75,38 @@ export function useTerrariaPanel() {
   }, [])
 
   useEffect(() => {
-    if (
-      installProgress.phase === 'idle' ||
-      installProgress.phase === 'completed' ||
-      installProgress.phase === 'failed'
-    ) {
+    const pollInstallStatus = () => {
+      terrariaApi.getInstallStatus().then(setInstallProgress).catch(() => undefined)
+    }
+
+    if (installPolling) {
+      pollInstallStatus()
+    }
+
+    const shouldPoll =
+      installPolling ||
+      (installProgress.phase !== 'idle' &&
+        installProgress.phase !== 'completed' &&
+        installProgress.phase !== 'failed')
+
+    if (!shouldPoll) {
       return
     }
 
-    const timer = window.setInterval(() => {
-      terrariaApi.getInstallStatus().then(setInstallProgress).catch(() => undefined)
-    }, 2000)
-
+    const timer = window.setInterval(pollInstallStatus, 2000)
     return () => window.clearInterval(timer)
+  }, [installProgress.phase, installPolling])
+
+  useEffect(() => {
+    if (
+      installProgress.phase === 'completed' ||
+      installProgress.phase === 'failed'
+    ) {
+      setInstallPolling(false)
+      if (installProgress.phase === 'completed') {
+        terrariaApi.getStatus().then(setStatus).catch(() => undefined)
+      }
+    }
   }, [installProgress.phase])
 
   const runAction = useCallback(
@@ -96,7 +116,12 @@ export function useTerrariaPanel() {
       try {
         const result = await action()
         if ('status' in result) setStatus(result)
-        if ('phase' in result) setInstallProgress(result)
+        if ('phase' in result) {
+          setInstallProgress(result)
+          if (key === 'install' && result.phase !== 'completed' && result.phase !== 'failed') {
+            setInstallPolling(true)
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : '操作失败')
       } finally {

@@ -49,9 +49,8 @@ export class TerrariaService {
     this.processManager.sendCommand(command);
   }
 
-  async install(): Promise<InstallProgressDto> {
-    await this.installService.install();
-    return this.getInstallStatus();
+  beginInstall(): InstallProgressDto {
+    return this.installService.beginInstall();
   }
 
   isInstalling(): boolean {
