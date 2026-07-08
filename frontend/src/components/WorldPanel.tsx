@@ -1,32 +1,50 @@
-import type { ServerStatusDto } from '../types/terraria'
 import type { WorldSummary } from '../types/world'
 import { formatDateTime, formatFileSize } from '../utils/world'
-import { isBusyStatus } from '../utils/format'
+import {
+  canDelete,
+  canRestart,
+  canStart,
+  canStop,
+  getStatusLabel,
+  isBusyStatus,
+} from '../utils/format'
 
 interface WorldPanelProps {
   installed: boolean
-  status: ServerStatusDto['status']
   worlds: WorldSummary[]
   loading: boolean
   actionLoading: string | null
+  selectedInstanceId: string | null
   onCreateClick: () => void
-  onSelectWorld: (path: string) => void
+  onStartWorld: (path: string) => void
+  onStopWorld: (path: string) => void
+  onRestartWorld: (path: string) => void
+  onDeleteWorld: (path: string, worldName: string, instanceId: string | null) => void
+  onSelectInstance: (instanceId: string) => void
+}
+
+function worldActionKey(prefix: string, path: string): string {
+  return `${prefix}:${path}`
 }
 
 export function WorldPanel({
   installed,
-  status,
   worlds,
   loading,
   actionLoading,
+  selectedInstanceId,
   onCreateClick,
-  onSelectWorld,
+  onStartWorld,
+  onStopWorld,
+  onRestartWorld,
+  onDeleteWorld,
+  onSelectInstance,
 }: WorldPanelProps) {
   if (!installed) {
     return null
   }
 
-  const busy = isBusyStatus(status) || actionLoading !== null
+  const globalBusy = actionLoading !== null && !actionLoading.includes(':')
   const hasWorlds = worlds.length > 0
 
   return (
@@ -34,12 +52,12 @@ export function WorldPanel({
       <div className="panel__header world-panel__header">
         <div>
           <h2>世界管理</h2>
-          <p>从 .wld 文件自动扫描世界列表，并管理 serverconfig.txt 配置</p>
+          <p>每个世界独立端口与进程，可同时运行多个服务器实例</p>
         </div>
         <button
           type="button"
           className="btn btn-primary"
-          disabled={busy}
+          disabled={globalBusy}
           onClick={onCreateClick}
         >
           创建世界
@@ -54,7 +72,7 @@ export function WorldPanel({
           <button
             type="button"
             className="btn btn-success world-panel__create-btn"
-            disabled={busy}
+            disabled={globalBusy}
             onClick={onCreateClick}
           >
             创建世界
@@ -62,35 +80,98 @@ export function WorldPanel({
         </div>
       ) : (
         <div className="world-list">
-          {worlds.map((world) => (
-            <article
-              key={world.path}
-              className={`world-card${world.active ? ' world-card--active' : ''}`}
-            >
-              <div className="world-card__main">
-                <div className="world-card__title-row">
-                  <h3>{world.worldName}</h3>
-                  {world.active && <span className="world-card__badge">当前</span>}
-                </div>
-                <p className="world-card__meta">
-                  {formatFileSize(world.sizeBytes)} · 更新于{' '}
-                  {formatDateTime(world.modifiedAt)}
-                </p>
-                <p className="world-card__path">{world.path}</p>
-              </div>
+          {worlds.map((world) => {
+            const busy =
+              globalBusy ||
+              isBusyStatus(world.status) ||
+              actionLoading === worldActionKey('start', world.path) ||
+              actionLoading === worldActionKey('stop', world.path) ||
+              actionLoading === worldActionKey('restart', world.path) ||
+              actionLoading === worldActionKey('delete', world.path)
 
-              {!world.active && (
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  disabled={busy}
-                  onClick={() => onSelectWorld(world.path)}
-                >
-                  设为当前
-                </button>
-              )}
-            </article>
-          ))}
+            const isSelected = world.instanceId === selectedInstanceId
+            const isRunning = world.status === 'running'
+
+            return (
+              <article
+                key={world.path}
+                className={`world-card${isSelected ? ' world-card--active' : ''}${isRunning ? ' world-card--running' : ''}`}
+              >
+                <div className="world-card__main">
+                  <div className="world-card__title-row">
+                    <h3>{world.worldName}</h3>
+                    <span className={`world-card__status badge-${world.status === 'running' ? 'running' : world.status === 'error' ? 'error' : world.status === 'starting' || world.status === 'stopping' ? 'starting' : 'stopped'}`}>
+                      {getStatusLabel(world.status)}
+                    </span>
+                    {world.port && (
+                      <span className="world-card__port">:{world.port}</span>
+                    )}
+                  </div>
+                  <p className="world-card__meta">
+                    {formatFileSize(world.sizeBytes)} · {world.playerCount}/{world.maxPlayers} 玩家
+                    · 更新于 {formatDateTime(world.modifiedAt)}
+                  </p>
+                  <p className="world-card__path">{world.path}</p>
+                </div>
+
+                <div className="world-card__actions">
+                  {world.instanceId && (
+                    <button
+                      type="button"
+                      className={`btn btn-ghost${isSelected ? ' btn-ghost--active' : ''}`}
+                      disabled={busy}
+                      onClick={() => onSelectInstance(world.instanceId!)}
+                    >
+                      日志
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-success"
+                    disabled={!canStart(world.status) || busy}
+                    onClick={() => onStartWorld(world.path)}
+                  >
+                    {actionLoading === worldActionKey('start', world.path)
+                      ? '启动中...'
+                      : '启动'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    disabled={!canStop(world.status) || busy}
+                    onClick={() => onStopWorld(world.path)}
+                  >
+                    {actionLoading === worldActionKey('stop', world.path)
+                      ? '停止中...'
+                      : '停止'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-warning"
+                    disabled={!canRestart(world.status) || busy}
+                    onClick={() => onRestartWorld(world.path)}
+                  >
+                    {actionLoading === worldActionKey('restart', world.path)
+                      ? '重启中...'
+                      : '重启'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-ghost--danger"
+                    disabled={!canDelete(world.status) || busy}
+                    title={canDelete(world.status) ? '删除世界及实例' : '请先停止服务器'}
+                    onClick={() =>
+                      onDeleteWorld(world.path, world.worldName, world.instanceId)
+                    }
+                  >
+                    {actionLoading === worldActionKey('delete', world.path)
+                      ? '删除中...'
+                      : '删除'}
+                  </button>
+                </div>
+              </article>
+            )
+          })}
         </div>
       )}
     </section>

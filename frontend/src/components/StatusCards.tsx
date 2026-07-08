@@ -17,25 +17,25 @@ const STATUS_CLASS: Record<ServerStatusDto['status'], string> = {
 export function StatusCards({ status, connected }: StatusCardsProps) {
   const cards = [
     {
-      label: '运行状态',
+      label: '聚合状态',
       value: getStatusLabel(status.status),
       badge: STATUS_CLASS[status.status],
     },
     {
-      label: '游戏端口',
-      value: String(status.port),
+      label: '运行实例',
+      value: `${status.runningCount} / ${status.totalInstances}`,
     },
     {
-      label: '在线玩家',
-      value: `${status.playerCount} / ${status.maxPlayers}`,
+      label: '总在线玩家',
+      value: `${status.totalPlayerCount}`,
+    },
+    {
+      label: '主端口',
+      value: String(status.port),
     },
     {
       label: '运行时长',
       value: formatUptime(status.uptimeSeconds),
-    },
-    {
-      label: '进程 PID',
-      value: status.pid ? String(status.pid) : '-',
     },
     {
       label: '安装状态',

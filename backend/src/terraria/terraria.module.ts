@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AppConfigModule } from '../config/config.module';
+import { InstanceController } from './instance.controller';
+import { InstanceManagerService } from './instance-manager.service';
 import { InstallService } from './install.service';
-import { ProcessManagerService } from './process-manager.service';
 import { ServerConfigService } from './server-config.service';
 import { TerrariaController } from './terraria.controller';
 import { TerrariaService } from './terraria.service';
@@ -10,14 +11,14 @@ import { WorldService } from './world.service';
 
 @Module({
   imports: [AppConfigModule],
-  controllers: [TerrariaController, WorldController],
+  controllers: [TerrariaController, InstanceController, WorldController],
   providers: [
     TerrariaService,
-    ProcessManagerService,
+    InstanceManagerService,
     InstallService,
     ServerConfigService,
     WorldService,
   ],
-  exports: [TerrariaService, ProcessManagerService],
+  exports: [TerrariaService, InstanceManagerService],
 })
 export class TerrariaModule {}

@@ -1,4 +1,4 @@
-import type { ServerStatusDto } from './terraria'
+import type { InstanceStatusDto, ServerStatusDto } from './terraria'
 
 export interface WorldSummary {
   fileName: string
@@ -6,12 +6,17 @@ export interface WorldSummary {
   path: string
   sizeBytes: number
   modifiedAt: string
-  active: boolean
+  instanceId: string | null
+  status: InstanceStatusDto['status']
+  port: number | null
+  playerCount: number
+  maxPlayers: number
+  pid: number | null
+  uptimeSeconds: number
 }
 
 export interface WorldsResponse {
   worlds: WorldSummary[]
-  activeWorldPath: string | null
 }
 
 export interface CreateWorldPayload {
@@ -23,6 +28,7 @@ export interface CreateWorldPayload {
 
 export interface CreateWorldResponse extends WorldsResponse {
   status: ServerStatusDto
+  instance?: InstanceStatusDto
 }
 
 export const WORLD_SIZE_OPTIONS = [

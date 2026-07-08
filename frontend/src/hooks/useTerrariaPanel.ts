@@ -4,6 +4,7 @@ import { terrariaApi } from '../api/terraria'
 import { worldsApi } from '../api/worlds'
 import type {
   InstallProgressDto,
+  InstanceStatusDto,
   LogEntry,
   ServerStatusDto,
 } from '../types/terraria'
@@ -24,11 +25,16 @@ const DEFAULT_STATUS: ServerStatusDto = {
   startedAt: null,
   uptimeSeconds: 0,
   pid: null,
+  runningCount: 0,
+  totalInstances: 0,
+  totalPlayerCount: 0,
 }
 
 export function useTerrariaPanel() {
   const [status, setStatus] = useState<ServerStatusDto>(DEFAULT_STATUS)
-  const [logs, setLogs] = useState<LogEntry[]>([])
+  const [instances, setInstances] = useState<InstanceStatusDto[]>([])
+  const [logsByInstance, setLogsByInstance] = useState<Record<string, LogEntry[]>>({})
+  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null)
   const [installProgress, setInstallProgress] =
     useState<InstallProgressDto>(DEFAULT_INSTALL)
   const [worlds, setWorlds] = useState<WorldSummary[]>([])
@@ -57,6 +63,10 @@ export function useTerrariaPanel() {
     }
   }, [status.installed])
 
+  const subscribeInstance = useCallback((instanceId: string) => {
+    socketRef.current?.emit('subscribe', { instanceId })
+  }, [])
+
   useEffect(() => {
     const socket = io('/terminal', {
       path: '/socket.io',
@@ -71,12 +81,36 @@ export function useTerrariaPanel() {
       setStatus(payload)
     })
 
-    socket.on('log', (entry: LogEntry) => {
-      setLogs((prev) => [...prev, entry].slice(-2000))
+    socket.on('instances', (payload: { instances: InstanceStatusDto[] }) => {
+      setInstances(payload.instances ?? [])
     })
 
-    socket.on('logs:history', (payload: { logs: LogEntry[] }) => {
-      setLogs(payload.logs ?? [])
+    socket.on('instance:status', (payload: InstanceStatusDto) => {
+      setInstances((prev) => {
+        const index = prev.findIndex((item) => item.id === payload.id)
+        if (index === -1) return [...prev, payload]
+        const next = [...prev]
+        next[index] = payload
+        return next
+      })
+    })
+
+    socket.on('log', (entry: LogEntry) => {
+      setLogsByInstance((prev) => {
+        const current = prev[entry.instanceId] ?? []
+        return {
+          ...prev,
+          [entry.instanceId]: [...current, entry].slice(-2000),
+        }
+      })
+    })
+
+    socket.on('logs:history', (payload: { instanceId: string; logs: LogEntry[] }) => {
+      if (!payload.instanceId) return
+      setLogsByInstance((prev) => ({
+        ...prev,
+        [payload.instanceId]: payload.logs ?? [],
+      }))
     })
 
     socket.on('install:progress', (payload: InstallProgressDto) => {
@@ -88,6 +122,7 @@ export function useTerrariaPanel() {
     })
 
     terrariaApi.getStatus().then(setStatus).catch(() => undefined)
+    terrariaApi.getInstances().then((r) => setInstances(r.instances)).catch(() => undefined)
     terrariaApi.getInstallStatus().then(setInstallProgress).catch(() => undefined)
 
     return () => {
@@ -99,6 +134,19 @@ export function useTerrariaPanel() {
   useEffect(() => {
     void refreshWorlds()
   }, [refreshWorlds, installProgress.phase])
+
+  useEffect(() => {
+    if (!selectedInstanceId && instances.length > 0) {
+      const running = instances.find((item) => item.status === 'running')
+      setSelectedInstanceId(running?.id ?? instances[0]?.id ?? null)
+    }
+  }, [instances, selectedInstanceId])
+
+  useEffect(() => {
+    if (selectedInstanceId && connected) {
+      subscribeInstance(selectedInstanceId)
+    }
+  }, [connected, selectedInstanceId, subscribeInstance])
 
   useEffect(() => {
     const pollInstallStatus = () => {
@@ -131,6 +179,7 @@ export function useTerrariaPanel() {
       setInstallPolling(false)
       if (installProgress.phase === 'completed') {
         terrariaApi.getStatus().then(setStatus).catch(() => undefined)
+        terrariaApi.getInstances().then((r) => setInstances(r.instances)).catch(() => undefined)
       }
     }
   }, [installProgress.phase])
@@ -138,8 +187,7 @@ export function useTerrariaPanel() {
   useEffect(() => {
     const shouldPollWorlds =
       status.installed &&
-      (status.status === 'starting' ||
-        status.status === 'running' ||
+      (worlds.some((world) => world.status === 'starting' || world.status === 'running') ||
         actionLoading === 'createWorld')
 
     if (!shouldPollWorlds) {
@@ -148,24 +196,18 @@ export function useTerrariaPanel() {
 
     const timer = window.setInterval(() => {
       void refreshWorlds()
+      terrariaApi.getInstances().then((r) => setInstances(r.instances)).catch(() => undefined)
     }, 3000)
 
     return () => window.clearInterval(timer)
-  }, [actionLoading, refreshWorlds, status.installed, status.status])
+  }, [actionLoading, refreshWorlds, status.installed, worlds])
 
   const runAction = useCallback(
-    async (key: string, action: () => Promise<ServerStatusDto | InstallProgressDto>) => {
+    async (key: string, action: () => Promise<unknown>) => {
       setActionLoading(key)
       setError(null)
       try {
-        const result = await action()
-        if ('status' in result) setStatus(result)
-        if ('phase' in result) {
-          setInstallProgress(result)
-          if (key === 'install' && result.phase !== 'completed' && result.phase !== 'failed') {
-            setInstallPolling(true)
-          }
-        }
+        await action()
       } catch (err) {
         setError(err instanceof Error ? err.message : '操作失败')
       } finally {
@@ -175,23 +217,48 @@ export function useTerrariaPanel() {
     [],
   )
 
-  const start = useCallback(
-    () => runAction('start', terrariaApi.start),
-    [runAction],
+  const startAll = useCallback(
+    () =>
+      runAction('startAll', async () => {
+        setStatus(await terrariaApi.startAll())
+        await refreshWorlds()
+        const result = await terrariaApi.getInstances()
+        setInstances(result.instances)
+      }),
+    [refreshWorlds, runAction],
   )
 
-  const stop = useCallback(
-    () => runAction('stop', terrariaApi.stop),
-    [runAction],
+  const stopAll = useCallback(
+    () =>
+      runAction('stopAll', async () => {
+        setStatus(await terrariaApi.stopAll())
+        await refreshWorlds()
+        const result = await terrariaApi.getInstances()
+        setInstances(result.instances)
+      }),
+    [refreshWorlds, runAction],
   )
 
-  const restart = useCallback(
-    () => runAction('restart', terrariaApi.restart),
-    [runAction],
+  const restartAll = useCallback(
+    () =>
+      runAction('restartAll', async () => {
+        setStatus(await terrariaApi.restartAll())
+        await refreshWorlds()
+        const result = await terrariaApi.getInstances()
+        setInstances(result.instances)
+      }),
+    [refreshWorlds, runAction],
   )
 
   const install = useCallback(
-    () => runAction('install', terrariaApi.install),
+    () =>
+      runAction('install', async () => {
+        const result = await terrariaApi.install()
+        setInstallProgress(result)
+        if (result.phase !== 'completed' && result.phase !== 'failed') {
+          setInstallPolling(true)
+        }
+      }),
     [runAction],
   )
 
@@ -202,6 +269,16 @@ export function useTerrariaPanel() {
       const result = await worldsApi.create(payload)
       setWorlds(result.worlds)
       setStatus(result.status)
+      if (result.instance) {
+        setSelectedInstanceId(result.instance.id)
+        setInstances((prev) => {
+          const index = prev.findIndex((item) => item.id === result.instance!.id)
+          if (index === -1) return [...prev, result.instance!]
+          const next = [...prev]
+          next[index] = result.instance!
+          return next
+        })
+      }
       setCreateModalOpen(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : '创建世界失败')
@@ -210,34 +287,132 @@ export function useTerrariaPanel() {
     }
   }, [])
 
-  const selectWorld = useCallback(async (path: string) => {
-    setActionLoading('selectWorld')
+  const startWorld = useCallback(
+    async (path: string) => {
+      setActionLoading(`start:${path}`)
+      setError(null)
+      try {
+        const result = await worldsApi.start(path)
+        setWorlds(result.worlds)
+        const refreshed = await terrariaApi.getInstances()
+        setInstances(refreshed.instances)
+        setStatus(await terrariaApi.getStatus())
+        const world = result.worlds.find((item) => item.path === path)
+        if (world?.instanceId) {
+          setSelectedInstanceId(world.instanceId)
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '启动失败')
+      } finally {
+        setActionLoading(null)
+      }
+    },
+    [],
+  )
+
+  const stopWorld = useCallback(async (path: string) => {
+    setActionLoading(`stop:${path}`)
     setError(null)
     try {
-      const result = await worldsApi.select(path)
+      const result = await worldsApi.stop(path)
       setWorlds(result.worlds)
+      const refreshed = await terrariaApi.getInstances()
+      setInstances(refreshed.instances)
+      setStatus(await terrariaApi.getStatus())
     } catch (err) {
-      setError(err instanceof Error ? err.message : '切换世界失败')
+      setError(err instanceof Error ? err.message : '停止失败')
     } finally {
       setActionLoading(null)
     }
   }, [])
 
+  const restartWorld = useCallback(async (path: string) => {
+    setActionLoading(`restart:${path}`)
+    setError(null)
+    try {
+      const result = await worldsApi.restart(path)
+      setWorlds(result.worlds)
+      const refreshed = await terrariaApi.getInstances()
+      setInstances(refreshed.instances)
+      setStatus(await terrariaApi.getStatus())
+      const world = result.worlds.find((item) => item.path === path)
+      if (world?.instanceId) {
+        setSelectedInstanceId(world.instanceId)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '重启失败')
+    } finally {
+      setActionLoading(null)
+    }
+  }, [])
+
+  const deleteWorld = useCallback(
+    async (path: string, worldName: string, instanceId: string | null) => {
+      const confirmed = window.confirm(
+        `确定删除世界「${worldName}」？\n\n将同时删除 .wld 文件及关联实例配置，此操作不可恢复。`,
+      )
+      if (!confirmed) return
+
+      setActionLoading(`delete:${path}`)
+      setError(null)
+      try {
+        const result = await worldsApi.delete(path)
+        setWorlds(result.worlds)
+        const refreshed = await terrariaApi.getInstances()
+        setInstances(refreshed.instances)
+        setStatus(await terrariaApi.getStatus())
+
+        if (instanceId && selectedInstanceId === instanceId) {
+          setSelectedInstanceId(null)
+        }
+
+        setLogsByInstance((prev) => {
+          if (!instanceId) return prev
+          const next = { ...prev }
+          delete next[instanceId]
+          return next
+        })
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '删除失败')
+      } finally {
+        setActionLoading(null)
+      }
+    },
+    [selectedInstanceId],
+  )
+
+  const selectInstance = useCallback((instanceId: string) => {
+    setSelectedInstanceId(instanceId)
+    subscribeInstance(instanceId)
+  }, [subscribeInstance])
+
   const sendCommand = useCallback((command: string) => {
     const trimmed = command.trim()
-    if (!trimmed) return
+    if (!trimmed || !selectedInstanceId) return
 
     setError(null)
-    socketRef.current?.emit('command', { command: trimmed })
-  }, [])
+    socketRef.current?.emit('command', {
+      instanceId: selectedInstanceId,
+      command: trimmed,
+    })
+  }, [selectedInstanceId])
 
   const clearError = useCallback(() => setError(null), [])
   const openCreateModal = useCallback(() => setCreateModalOpen(true), [])
   const closeCreateModal = useCallback(() => setCreateModalOpen(false), [])
 
+  const selectedLogs = selectedInstanceId
+    ? logsByInstance[selectedInstanceId] ?? []
+    : []
+
+  const selectedInstance = instances.find((item) => item.id === selectedInstanceId) ?? null
+
   return {
     status,
-    logs,
+    instances,
+    selectedInstanceId,
+    selectedInstance,
+    logs: selectedLogs,
     installProgress,
     worlds,
     worldsLoading,
@@ -245,12 +420,16 @@ export function useTerrariaPanel() {
     connected,
     actionLoading,
     error,
-    start,
-    stop,
-    restart,
+    startAll,
+    stopAll,
+    restartAll,
     install,
     createWorld,
-    selectWorld,
+    startWorld,
+    stopWorld,
+    restartWorld,
+    deleteWorld,
+    selectInstance,
     openCreateModal,
     closeCreateModal,
     sendCommand,

@@ -42,9 +42,27 @@ export const worldsApi = {
       body: JSON.stringify(payload),
     }),
 
-  select: (path: string) =>
-    request<WorldsResponse>('/worlds/active', {
-      method: 'PATCH',
+  start: (path: string) =>
+    request<WorldsResponse>('/worlds/start', {
+      method: 'POST',
+      body: JSON.stringify({ path }),
+    }),
+
+  stop: (path: string) =>
+    request<WorldsResponse>('/worlds/stop', {
+      method: 'POST',
+      body: JSON.stringify({ path }),
+    }),
+
+  restart: (path: string) =>
+    request<WorldsResponse>('/worlds/restart', {
+      method: 'POST',
+      body: JSON.stringify({ path }),
+    }),
+
+  delete: (path: string) =>
+    request<WorldsResponse>('/worlds', {
+      method: 'DELETE',
       body: JSON.stringify({ path }),
     }),
 }

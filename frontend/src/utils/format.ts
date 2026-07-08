@@ -38,3 +38,7 @@ export function canStop(status: ServerStatus): boolean {
 export function canRestart(status: ServerStatus): boolean {
   return status === 'running' || status === 'stopped' || status === 'error'
 }
+
+export function canDelete(status: ServerStatus): boolean {
+  return status === 'stopped' || status === 'error'
+}

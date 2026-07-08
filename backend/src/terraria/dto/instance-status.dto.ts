@@ -1,7 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ServerStatus } from '../../common/enums/server-status.enum';
 
-export class ServerStatusDto {
+export class InstanceStatusDto {
+  @ApiProperty({ example: '550e8400-e29b-41d4-a716-446655440000' })
+  id: string;
+
+  @ApiProperty({ example: '/data/terraria/worlds/world.wld' })
+  worldPath: string;
+
+  @ApiProperty({ example: 'world' })
+  worldName: string;
+
   @ApiProperty({ enum: ServerStatus })
   status: ServerStatus;
 
@@ -20,18 +29,14 @@ export class ServerStatusDto {
   @ApiProperty({ example: '2026-07-03T10:00:00.000Z', nullable: true })
   startedAt: string | null;
 
-  @ApiProperty({ example: 3600, description: '运行时长（秒）' })
+  @ApiProperty({ example: 3600 })
   uptimeSeconds: number;
 
   @ApiProperty({ example: 12345, nullable: true })
   pid: number | null;
+}
 
-  @ApiProperty({ example: 2, description: '当前运行中的实例数' })
-  runningCount: number;
-
-  @ApiProperty({ example: 3, description: '已注册实例总数' })
-  totalInstances: number;
-
-  @ApiProperty({ example: 5, description: '所有实例在线玩家总数' })
-  totalPlayerCount: number;
+export class InstancesResponseDto {
+  @ApiProperty({ type: [InstanceStatusDto] })
+  instances: InstanceStatusDto[];
 }

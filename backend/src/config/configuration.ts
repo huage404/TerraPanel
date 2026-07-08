@@ -11,6 +11,8 @@ export interface TerrariaEnvConfig {
   executable: string;
   downloadUrl: string;
   serverPort: number;
+  portStart: number;
+  portEnd: number;
   maxPlayers: number;
   worldPath: string;
   worldName: string;
@@ -54,6 +56,8 @@ export default (): TerrariaConfig => ({
       process.env.TERRARIA_EXECUTABLE ?? 'TerrariaServer.bin.x86_64',
     downloadUrl: process.env.TERRARIA_DOWNLOAD_URL ?? '',
     serverPort: parseInt(process.env.TERRARIA_SERVER_PORT ?? '7777', 10),
+    portStart: parseInt(process.env.TERRARIA_PORT_START ?? '7777', 10),
+    portEnd: parseInt(process.env.TERRARIA_PORT_END ?? '7799', 10),
     maxPlayers: parseInt(process.env.TERRARIA_MAX_PLAYERS ?? '8', 10),
     worldPath: process.env.TERRARIA_WORLD_PATH ?? '',
     worldName: process.env.TERRARIA_WORLD_NAME ?? 'world',
@@ -77,6 +81,8 @@ export const validationSchema = Joi.object({
   TERRARIA_EXECUTABLE: Joi.string().default('TerrariaServer.bin.x86_64'),
   TERRARIA_DOWNLOAD_URL: Joi.string().allow('').default(''),
   TERRARIA_SERVER_PORT: Joi.number().default(7777),
+  TERRARIA_PORT_START: Joi.number().default(7777),
+  TERRARIA_PORT_END: Joi.number().default(7799),
   TERRARIA_MAX_PLAYERS: Joi.number().min(1).max(255).default(8),
   TERRARIA_WORLD_PATH: Joi.string().allow('').default(''),
   TERRARIA_WORLD_NAME: Joi.string().default('world'),

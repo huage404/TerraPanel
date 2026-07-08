@@ -63,6 +63,13 @@ export class AppConfigService implements OnModuleInit {
     return this.envConfig.downloadUrl;
   }
 
+  getPortRange(): { portStart: number; portEnd: number } {
+    return {
+      portStart: this.envConfig.portStart,
+      portEnd: this.envConfig.portEnd,
+    };
+  }
+
   isInstalledSync(): boolean {
     try {
       accessSync(this.getExecutablePath(), constants.X_OK);

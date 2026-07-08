@@ -14,7 +14,7 @@ import {
 } from '../common/constants/events';
 import type { LogEntry } from '../common/interfaces/log-entry.interface';
 import type { InstallProgressDto } from '../terraria/dto/install-status.dto';
-import type { ServerStatusDto } from '../terraria/dto/server-status.dto';
+import type { InstanceStatusDto } from '../terraria/dto/instance-status.dto';
 import { TerrariaService } from '../terraria/terraria.service';
 
 @WebSocketGateway({
@@ -32,25 +32,55 @@ export class TerminalGateway {
 
   handleConnection(client: Socket): void {
     client.emit('status', this.terrariaService.getStatus());
-    client.emit('install:progress', this.terrariaService.getInstallStatus());
-    client.emit('logs:history', {
-      logs: this.terrariaService.getLogs(500).logs,
+    client.emit('instances', {
+      instances: this.terrariaService.listInstances(),
     });
+    client.emit('install:progress', this.terrariaService.getInstallStatus());
+  }
+
+  @SubscribeMessage('subscribe')
+  handleSubscribe(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { instanceId?: string },
+  ): void {
+    const instanceId = payload?.instanceId?.trim();
+    if (!instanceId) {
+      client.emit('error', { message: 'instanceId 不能为空' });
+      return;
+    }
+
+    try {
+      const logs = this.terrariaService.getLogs(instanceId, 500);
+      client.emit('logs:history', {
+        instanceId,
+        logs: logs.logs,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '订阅失败';
+      client.emit('error', { message });
+    }
   }
 
   @SubscribeMessage('command')
   handleCommand(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { command?: string },
+    @MessageBody() payload: { instanceId?: string; command?: string },
   ): void {
+    const instanceId = payload?.instanceId?.trim();
     const command = payload?.command?.trim();
+
+    if (!instanceId) {
+      client.emit('error', { message: 'instanceId 不能为空' });
+      return;
+    }
+
     if (!command) {
       client.emit('error', { message: '命令不能为空' });
       return;
     }
 
     try {
-      this.terrariaService.sendCommand(command);
+      this.terrariaService.sendCommand(instanceId, command);
     } catch (error) {
       const message = error instanceof Error ? error.message : '发送命令失败';
       client.emit('error', { message });
@@ -63,8 +93,12 @@ export class TerminalGateway {
   }
 
   @OnEvent(TERRARIA_STATUS)
-  handleStatusEvent(status: ServerStatusDto): void {
-    this.server.emit('status', status);
+  handleStatusEvent(status: InstanceStatusDto): void {
+    this.server.emit('instance:status', status);
+    this.server.emit('status', this.terrariaService.getStatus());
+    this.server.emit('instances', {
+      instances: this.terrariaService.listInstances(),
+    });
   }
 
   @OnEvent(TERRARIA_INSTALL_PROGRESS)

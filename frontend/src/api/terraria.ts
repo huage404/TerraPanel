@@ -1,5 +1,6 @@
 import type {
   InstallProgressDto,
+  InstanceStatusDto,
   ServerStatusDto,
 } from '../types/terraria'
 
@@ -35,12 +36,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const terrariaApi = {
   getStatus: () => request<ServerStatusDto>('/terraria/status'),
 
-  start: () =>
+  getInstances: () =>
+    request<{ instances: InstanceStatusDto[] }>('/terraria/instances'),
+
+  startAll: () =>
     request<ServerStatusDto>('/terraria/start', { method: 'POST' }),
 
-  stop: () => request<ServerStatusDto>('/terraria/stop', { method: 'POST' }),
+  stopAll: () =>
+    request<ServerStatusDto>('/terraria/stop', { method: 'POST' }),
 
-  restart: () =>
+  restartAll: () =>
     request<ServerStatusDto>('/terraria/restart', { method: 'POST' }),
 
   install: () =>

@@ -37,6 +37,6 @@ COPY --from=deps /app/backend/node_modules ./node_modules
 
 RUN mkdir -p /data/terraria/worlds
 
-EXPOSE 3000 7777
+EXPOSE 3000 7777-7799
 
 CMD ["node", "dist/main.js"]

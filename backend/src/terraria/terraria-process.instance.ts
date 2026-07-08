@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ChildProcess, spawn } from 'node:child_process';
 import { access, constants } from 'node:fs/promises';
@@ -12,55 +7,78 @@ import {
   TERRARIA_STATUS,
 } from '../common/constants/events';
 import { ServerStatus } from '../common/enums/server-status.enum';
+import type { InstanceConfig } from '../common/interfaces/instance-config.interface';
 import {
   LogEntry,
   LogStream,
 } from '../common/interfaces/log-entry.interface';
 import { AppConfigService } from '../config/config.service';
 import { ServerConfigService } from './server-config.service';
+import {
+  OnlinePlayerTracker,
+  parseAggregatePlayerCount,
+  parsePlayerLogLine,
+} from './player-log.parser';
 
-@Injectable()
-export class ProcessManagerService implements OnModuleDestroy {
-  private readonly logger = new Logger(ProcessManagerService.name);
+export interface InstanceStatusSnapshot {
+  id: string;
+  worldPath: string;
+  worldName: string;
+  status: ServerStatus;
+  port: number;
+  playerCount: number;
+  maxPlayers: number;
+  startedAt: string | null;
+  uptimeSeconds: number;
+  pid: number | null;
+}
+
+export class TerrariaProcessInstance {
+  private readonly logger: Logger;
   private process: ChildProcess | null = null;
   private status = ServerStatus.STOPPED;
   private startedAt: Date | null = null;
   private playerCount = 0;
+  private readonly onlinePlayers = new OnlinePlayerTracker();
   private logId = 0;
   private readonly logs: LogEntry[] = [];
   private readonly maxLogs = 2000;
 
   constructor(
-    private readonly configService: AppConfigService,
+    private config: InstanceConfig,
+    private readonly appConfigService: AppConfigService,
     private readonly serverConfigService: ServerConfigService,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
-
-  onModuleDestroy(): void {
-    void this.stop(true);
+  ) {
+    this.logger = new Logger(`TerrariaProcess:${config.id.slice(0, 8)}`);
   }
 
-  getStatusSnapshot(): {
-    status: ServerStatus;
-    port: number;
-    playerCount: number;
-    maxPlayers: number;
-    startedAt: string | null;
-    uptimeSeconds: number;
-    pid: number | null;
-    installed: boolean;
-  } {
+  get id(): string {
+    return this.config.id;
+  }
+
+  getConfig(): InstanceConfig {
+    return { ...this.config };
+  }
+
+  updateConfig(partial: Partial<InstanceConfig>): void {
+    this.config = { ...this.config, ...partial };
+  }
+
+  getStatusSnapshot(): InstanceStatusSnapshot {
     return {
+      id: this.config.id,
+      worldPath: this.config.worldPath,
+      worldName: this.config.worldName,
       status: this.status,
-      port: this.configService.getRuntimeConfig().serverPort,
+      port: this.config.port,
       playerCount: this.playerCount,
-      maxPlayers: this.configService.getRuntimeConfig().maxPlayers,
+      maxPlayers: this.config.maxPlayers,
       startedAt: this.startedAt?.toISOString() ?? null,
       uptimeSeconds: this.startedAt
         ? Math.floor((Date.now() - this.startedAt.getTime()) / 1000)
         : 0,
       pid: this.process?.pid ?? null,
-      installed: this.configService.isInstalledSync(),
     };
   }
 
@@ -74,33 +92,40 @@ export class ProcessManagerService implements OnModuleDestroy {
       this.status === ServerStatus.RUNNING ||
       this.status === ServerStatus.STARTING
     ) {
-      throw new BadRequestException('服务器已在运行或正在启动');
+      throw new BadRequestException(
+        `实例「${this.config.worldName}」已在运行或正在启动`,
+      );
     }
 
-    const installed = await this.configService.isInstalled();
+    const installed = await this.appConfigService.isInstalled();
     if (!installed) {
       throw new BadRequestException('Terraria 服务器尚未安装，请先执行一键安装');
     }
 
-    const executablePath = this.configService.getExecutablePath();
-    const installPath = this.configService.getInstallPath();
-    const config = this.configService.getRuntimeConfig();
-    const worldPath = this.serverConfigService.resolveWorldPath(config);
-    const configPath = await this.serverConfigService.writeConfig();
+    const executablePath = this.appConfigService.getExecutablePath();
+    const installPath = this.appConfigService.getInstallPath();
+    const configPath = await this.serverConfigService.writeInstanceConfig(
+      this.config,
+    );
     const args = ['-config', configPath];
 
     try {
-      await access(worldPath, constants.F_OK);
+      await access(this.config.worldPath, constants.F_OK);
     } catch {
       this.appendLog(
         'system',
-        `世界文件不存在，将根据 ${configPath} 自动创建世界（尺寸=${config.worldSize}，难度=${config.worldDifficulty}${config.worldSeed ? `，种子=${config.worldSeed}` : ''}）`,
+        `世界文件不存在，将根据 ${configPath} 自动创建世界（尺寸=${this.config.worldSize}，难度=${this.config.worldDifficulty}${this.config.worldSeed ? `，种子=${this.config.worldSeed}` : ''}）`,
       );
     }
 
     this.status = ServerStatus.STARTING;
+    this.onlinePlayers.reset();
+    this.playerCount = 0;
     this.emitStatus();
-    this.appendLog('system', `正在启动服务器: ${executablePath} ${args.join(' ')}`);
+    this.appendLog(
+      'system',
+      `正在启动服务器: ${executablePath} ${args.join(' ')}`,
+    );
 
     this.process = spawn(executablePath, args, {
       cwd: installPath,
@@ -192,6 +217,10 @@ export class ProcessManagerService implements OnModuleDestroy {
     this.appendLog('system', `> ${command}`);
   }
 
+  async destroy(force = false): Promise<void> {
+    await this.stop(force);
+  }
+
   private handleOutput(stream: LogStream, raw: string): void {
     const lines = raw.split(/\r?\n/).filter((line) => line.length > 0);
     for (const line of lines) {
@@ -201,16 +230,19 @@ export class ProcessManagerService implements OnModuleDestroy {
   }
 
   private parseMetrics(line: string): void {
-    const playersMatch = line.match(/(\d+)\/(\d+)\s+players?/i);
-    if (playersMatch) {
-      this.playerCount = parseInt(playersMatch[1], 10);
+    const playerEvent = parsePlayerLogLine(line);
+    if (playerEvent) {
+      this.playerCount = this.onlinePlayers.apply(
+        playerEvent.event,
+        playerEvent.playerName,
+      );
       this.emitStatus();
       return;
     }
 
-    const connectedMatch = line.match(/(\d+)\s+users?\s+are\s+playing/i);
-    if (connectedMatch) {
-      this.playerCount = parseInt(connectedMatch[1], 10);
+    const aggregateCount = parseAggregatePlayerCount(line);
+    if (aggregateCount !== null) {
+      this.playerCount = this.onlinePlayers.setCount(aggregateCount);
       this.emitStatus();
     }
   }
@@ -218,6 +250,7 @@ export class ProcessManagerService implements OnModuleDestroy {
   private appendLog(stream: LogStream, message: string): void {
     const entry: LogEntry = {
       id: ++this.logId,
+      instanceId: this.config.id,
       timestamp: new Date().toISOString(),
       stream,
       message,
@@ -235,6 +268,7 @@ export class ProcessManagerService implements OnModuleDestroy {
     this.process = null;
     this.startedAt = null;
     this.playerCount = 0;
+    this.onlinePlayers.reset();
   }
 
   private emitStatus(): void {

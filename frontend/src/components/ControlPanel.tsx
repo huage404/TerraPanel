@@ -1,18 +1,13 @@
 import type { ServerStatusDto } from '../types/terraria'
-import {
-  canRestart,
-  canStart,
-  canStop,
-  isBusyStatus,
-} from '../utils/format'
+import { isBusyStatus } from '../utils/format'
 
 interface ControlPanelProps {
   status: ServerStatusDto
   hasWorlds: boolean
   loading: string | null
-  onStart: () => void
-  onStop: () => void
-  onRestart: () => void
+  onStartAll: () => void
+  onStopAll: () => void
+  onRestartAll: () => void
   onCreateClick: () => void
 }
 
@@ -20,18 +15,22 @@ export function ControlPanel({
   status,
   hasWorlds,
   loading,
-  onStart,
-  onStop,
-  onRestart,
+  onStartAll,
+  onStopAll,
+  onRestartAll,
   onCreateClick,
 }: ControlPanelProps) {
   const busy = isBusyStatus(status.status) || loading !== null
+  const hasRunning = status.runningCount > 0
+  const hasStoppedInstances = status.totalInstances > status.runningCount
 
   return (
     <section className="panel control-panel">
       <div className="panel__header">
-        <h2>服务器控制</h2>
-        <p>管理 Terraria 专用服务器的启停与重启</p>
+        <h2>批量控制</h2>
+        <p>
+          已注册 {status.totalInstances} 个实例，{status.runningCount} 个运行中
+        </p>
       </div>
 
       <div className="control-panel__actions">
@@ -49,26 +48,26 @@ export function ControlPanel({
             <button
               type="button"
               className="btn btn-success"
-              disabled={!canStart(status.status) || busy || !hasWorlds}
-              onClick={onStart}
+              disabled={busy || !hasWorlds || !hasStoppedInstances}
+              onClick={onStartAll}
             >
-              {loading === 'start' ? '启动中...' : '启动'}
+              {loading === 'startAll' ? '启动中...' : '全部启动'}
             </button>
             <button
               type="button"
               className="btn btn-danger"
-              disabled={!canStop(status.status) || busy}
-              onClick={onStop}
+              disabled={busy || !hasRunning}
+              onClick={onStopAll}
             >
-              {loading === 'stop' ? '停止中...' : '停止'}
+              {loading === 'stopAll' ? '停止中...' : '全部停止'}
             </button>
             <button
               type="button"
               className="btn btn-warning"
-              disabled={!canRestart(status.status) || busy || !hasWorlds}
-              onClick={onRestart}
+              disabled={busy || !hasWorlds || status.totalInstances === 0}
+              onClick={onRestartAll}
             >
-              {loading === 'restart' ? '重启中...' : '重启'}
+              {loading === 'restartAll' ? '重启中...' : '全部重启'}
             </button>
           </>
         )}
@@ -83,6 +82,12 @@ export function ControlPanel({
       {status.installed && !hasWorlds && (
         <p className="control-panel__hint">
           尚未检测到世界文件，请先创建世界后再启动服务器。
+        </p>
+      )}
+
+      {status.installed && hasWorlds && status.totalInstances === 0 && (
+        <p className="control-panel__hint">
+          从世界列表单独启动实例，或使用「全部启动」批量运行。
         </p>
       )}
     </section>

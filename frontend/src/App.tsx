@@ -10,6 +10,9 @@ import './App.css'
 function App() {
   const {
     status,
+    instances,
+    selectedInstanceId,
+    selectedInstance,
     logs,
     installProgress,
     worlds,
@@ -18,12 +21,16 @@ function App() {
     connected,
     actionLoading,
     error,
-    start,
-    stop,
-    restart,
+    startAll,
+    stopAll,
+    restartAll,
     install,
     createWorld,
-    selectWorld,
+    startWorld,
+    stopWorld,
+    restartWorld,
+    deleteWorld,
+    selectInstance,
     openCreateModal,
     closeCreateModal,
     sendCommand,
@@ -38,7 +45,7 @@ function App() {
         <div>
           <p className="app-header__eyebrow">Terraria Server Manager</p>
           <h1>TerraPanel</h1>
-          <p className="app-header__subtitle">泰拉瑞亚服务器 Web 管理面板</p>
+          <p className="app-header__subtitle">泰拉瑞亚多世界服务器 Web 管理面板</p>
         </div>
         <div className="app-header__status">
           <span className={connected ? 'dot dot--online' : 'dot dot--offline'} />
@@ -60,12 +67,16 @@ function App() {
 
         <WorldPanel
           installed={status.installed}
-          status={status.status}
           worlds={worlds}
           loading={worldsLoading}
           actionLoading={actionLoading}
           onCreateClick={openCreateModal}
-          onSelectWorld={selectWorld}
+          onStartWorld={startWorld}
+          onStopWorld={stopWorld}
+          onRestartWorld={restartWorld}
+          onDeleteWorld={deleteWorld}
+          onSelectInstance={selectInstance}
+          selectedInstanceId={selectedInstanceId}
         />
 
         <div className="dashboard-grid">
@@ -73,9 +84,9 @@ function App() {
             status={status}
             hasWorlds={hasWorlds}
             loading={actionLoading}
-            onStart={start}
-            onStop={stop}
-            onRestart={restart}
+            onStartAll={startAll}
+            onStopAll={stopAll}
+            onRestartAll={restartAll}
             onCreateClick={openCreateModal}
           />
           <InstallPanel
@@ -87,8 +98,11 @@ function App() {
         </div>
 
         <LogTerminal
+          instances={instances}
+          selectedInstanceId={selectedInstanceId}
+          selectedInstance={selectedInstance}
           logs={logs}
-          disabled={status.status !== 'running'}
+          onSelectInstance={selectInstance}
           onSendCommand={sendCommand}
         />
       </main>

@@ -136,7 +136,9 @@ cp .env.example .env
 | `TERRARIA_DOWNLOAD_URL` | 官方 Linux 专用服务器 ZIP 下载地址 |
 | `TERRARIA_INSTALL_PATH` | 服务器安装目录 |
 | `TERRARIA_EXECUTABLE` | 可执行文件名，默认 `TerrariaServer.bin.x86_64` |
-| `TERRARIA_SERVER_PORT` | 游戏端口，默认 `7777` |
+| `TERRARIA_SERVER_PORT` | 默认游戏端口（兼容旧配置/迁移） |
+| `TERRARIA_PORT_START` | 多实例端口范围起始，默认 `7777` |
+| `TERRARIA_PORT_END` | 多实例端口范围结束，默认 `7799` |
 | `TERRARIA_MAX_PLAYERS` | 最大玩家数 |
 | `TERRARIA_WORLD_NAME` | 世界名称（自动创建时使用） |
 | `TERRARIA_WORLD_SIZE` | 世界尺寸：`1`=小，`2`=中，`3`=大（首次自动创建时生效） |
@@ -168,14 +170,20 @@ pnpm --filter @terrapanel/frontend dev
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/terraria/status` | 服务器状态 |
-| POST | `/api/terraria/start` | 启动 |
-| POST | `/api/terraria/stop` | 停止 |
-| POST | `/api/terraria/restart` | 重启 |
+| GET | `/api/terraria/status` | 聚合服务器状态 |
+| POST | `/api/terraria/start` | 启动所有已停止实例 |
+| POST | `/api/terraria/stop` | 停止所有运行中实例 |
+| POST | `/api/terraria/restart` | 重启所有实例 |
 | POST | `/api/terraria/install` | 一键安装 |
-| GET | `/api/worlds` | 世界列表（扫描 `.wld`） |
+| GET | `/api/instances` | 实例列表 |
+| POST | `/api/instances` | 创建实例 |
+| POST | `/api/instances/:id/start` | 启动单个实例 |
+| POST | `/api/instances/:id/stop` | 停止单个实例 |
+| GET | `/api/worlds` | 世界列表（含各世界实例状态） |
 | POST | `/api/worlds` | 创建世界并启动生成 |
-| PATCH | `/api/worlds/active` | 切换当前世界 |
+| POST | `/api/worlds/start` | 启动指定世界 |
+| POST | `/api/worlds/stop` | 停止指定世界 |
+| DELETE | `/api/worlds` | 删除世界及关联实例（需先停止） |
 | GET | `/api/config` | 读取配置 |
 
-WebSocket 命名空间：`/terminal`（实时日志、状态、安装进度）
+WebSocket 命名空间：`/terminal`（实时日志、实例状态、安装进度；日志与命令需指定 `instanceId`）

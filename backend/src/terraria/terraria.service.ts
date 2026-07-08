@@ -1,25 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { AppConfigService } from '../config/config.service';
 import { InstallProgressDto } from './dto/install-status.dto';
+import { InstanceStatusDto } from './dto/instance-status.dto';
 import { LogsResponseDto } from './dto/logs-response.dto';
 import { ServerStatusDto } from './dto/server-status.dto';
 import { InstallService } from './install.service';
-import { ProcessManagerService } from './process-manager.service';
+import { InstanceManagerService } from './instance-manager.service';
 
 @Injectable()
 export class TerrariaService {
   constructor(
-    private readonly processManager: ProcessManagerService,
+    private readonly instanceManager: InstanceManagerService,
     private readonly installService: InstallService,
     private readonly configService: AppConfigService,
   ) {}
 
   getStatus(): ServerStatusDto {
-    return this.processManager.getStatusSnapshot();
+    return this.instanceManager.getAggregateStatus();
   }
 
-  getLogs(limit = 200): LogsResponseDto {
-    const logs = this.processManager.getLogs(limit);
+  getLogs(instanceId: string, limit = 200): LogsResponseDto {
+    const logs = this.instanceManager.getLogs(instanceId, limit);
     return {
       logs,
       total: logs.length,
@@ -30,23 +31,23 @@ export class TerrariaService {
     return this.installService.getProgress();
   }
 
-  async start(): Promise<ServerStatusDto> {
-    await this.processManager.start();
+  async startAll(): Promise<ServerStatusDto> {
+    await this.instanceManager.startAll();
     return this.getStatus();
   }
 
-  async stop(): Promise<ServerStatusDto> {
-    await this.processManager.stop();
+  async stopAll(): Promise<ServerStatusDto> {
+    await this.instanceManager.stopAll();
     return this.getStatus();
   }
 
-  async restart(): Promise<ServerStatusDto> {
-    await this.processManager.restart();
+  async restartAll(): Promise<ServerStatusDto> {
+    await this.instanceManager.restartAll();
     return this.getStatus();
   }
 
-  sendCommand(command: string): void {
-    this.processManager.sendCommand(command);
+  sendCommand(instanceId: string, command: string): void {
+    this.instanceManager.sendCommand(instanceId, command);
   }
 
   beginInstall(): InstallProgressDto {
@@ -59,5 +60,9 @@ export class TerrariaService {
 
   isInstalled(): boolean {
     return this.configService.isInstalledSync();
+  }
+
+  listInstances(): InstanceStatusDto[] {
+    return this.instanceManager.getAllStatuses();
   }
 }

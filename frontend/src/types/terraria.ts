@@ -17,12 +17,30 @@ export type LogStream = 'stdout' | 'stderr' | 'system'
 
 export interface LogEntry {
   id: number
+  instanceId: string
   timestamp: string
   stream: LogStream
   message: string
 }
 
 export interface ServerStatusDto {
+  status: ServerStatus
+  installed: boolean
+  port: number
+  playerCount: number
+  maxPlayers: number
+  startedAt: string | null
+  uptimeSeconds: number
+  pid: number | null
+  runningCount: number
+  totalInstances: number
+  totalPlayerCount: number
+}
+
+export interface InstanceStatusDto {
+  id: string
+  worldPath: string
+  worldName: string
   status: ServerStatus
   installed: boolean
   port: number
@@ -41,7 +59,12 @@ export interface InstallProgressDto {
 }
 
 export interface LogsHistoryPayload {
+  instanceId: string
   logs: LogEntry[]
+}
+
+export interface InstancesPayload {
+  instances: InstanceStatusDto[]
 }
 
 export interface ApiErrorBody {

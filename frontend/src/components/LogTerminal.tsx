@@ -5,12 +5,15 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
-import type { LogEntry } from '../types/terraria'
-import { formatTime } from '../utils/format'
+import type { InstanceStatusDto, LogEntry } from '../types/terraria'
+import { formatTime, getStatusLabel } from '../utils/format'
 
 interface LogTerminalProps {
+  instances: InstanceStatusDto[]
+  selectedInstanceId: string | null
+  selectedInstance: InstanceStatusDto | null
   logs: LogEntry[]
-  disabled: boolean
+  onSelectInstance: (instanceId: string) => void
   onSendCommand: (command: string) => void
 }
 
@@ -20,12 +23,21 @@ function streamClass(stream: LogEntry['stream']): string {
   return 'terminal-line--stdout'
 }
 
-export function LogTerminal({ logs, disabled, onSendCommand }: LogTerminalProps) {
+export function LogTerminal({
+  instances,
+  selectedInstanceId,
+  selectedInstance,
+  logs,
+  onSelectInstance,
+  onSendCommand,
+}: LogTerminalProps) {
   const [input, setInput] = useState('')
   const viewportRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const stickToBottomRef = useRef(true)
   const autoScrollingRef = useRef(false)
+
+  const disabled = selectedInstance?.status !== 'running'
 
   useLayoutEffect(() => {
     if (!stickToBottomRef.current) return
@@ -35,7 +47,7 @@ export function LogTerminal({ logs, disabled, onSendCommand }: LogTerminalProps)
     requestAnimationFrame(() => {
       autoScrollingRef.current = false
     })
-  }, [logs])
+  }, [logs, selectedInstanceId])
 
   const handleScroll = () => {
     if (autoScrollingRef.current) return
@@ -64,10 +76,32 @@ export function LogTerminal({ logs, disabled, onSendCommand }: LogTerminalProps)
 
   return (
     <section className="panel terminal-panel">
-      <div className="panel__header">
-        <h2>实时日志终端</h2>
-        <p>服务器 stdout / stderr 输出，支持发送控制台命令</p>
+      <div className="panel__header terminal-panel__header">
+        <div>
+          <h2>实时日志终端</h2>
+          <p>
+            {selectedInstance
+              ? `${selectedInstance.worldName} (:${selectedInstance.port}) · ${getStatusLabel(selectedInstance.status)}`
+              : '选择实例以查看日志并发送命令'}
+          </p>
+        </div>
       </div>
+
+      {instances.length > 0 && (
+        <div className="terminal-tabs">
+          {instances.map((instance) => (
+            <button
+              key={instance.id}
+              type="button"
+              className={`terminal-tab${selectedInstanceId === instance.id ? ' terminal-tab--active' : ''}`}
+              onClick={() => onSelectInstance(instance.id)}
+            >
+              {instance.worldName}
+              <span className="terminal-tab__port">:{instance.port}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="terminal">
         <div
@@ -75,7 +109,9 @@ export function LogTerminal({ logs, disabled, onSendCommand }: LogTerminalProps)
           className="terminal__viewport"
           onScroll={handleScroll}
         >
-          {logs.length === 0 ? (
+          {!selectedInstanceId ? (
+            <div className="terminal__empty">请从上方世界列表或 Tab 选择实例</div>
+          ) : logs.length === 0 ? (
             <div className="terminal__empty">等待日志输出...</div>
           ) : (
             <>
@@ -97,12 +133,22 @@ export function LogTerminal({ logs, disabled, onSendCommand }: LogTerminalProps)
           <input
             className="terminal__input"
             value={input}
-            placeholder={disabled ? '服务器未运行' : '输入命令并回车发送'}
-            disabled={disabled}
+            placeholder={
+              !selectedInstanceId
+                ? '请先选择实例'
+                : disabled
+                  ? '实例未运行'
+                  : '输入命令并回车发送'
+            }
+            disabled={disabled || !selectedInstanceId}
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <button type="submit" className="btn btn-ghost" disabled={disabled}>
+          <button
+            type="submit"
+            className="btn btn-ghost"
+            disabled={disabled || !selectedInstanceId}
+          >
             发送
           </button>
         </form>
