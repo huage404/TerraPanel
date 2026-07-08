@@ -4,7 +4,8 @@ services:
       context: .
       dockerfile: backend/Dockerfile
       args:
-        NODE_IMAGE: ${NODE_IMAGE:-node:22-bookworm-slim}
+        NODE_IMAGE: ${NODE_IMAGE:-node:22-alpine}
+        RUNNER_IMAGE: ${RUNNER_IMAGE:-node:22-bookworm-slim}
     container_name: terrapanel
     restart: unless-stopped
     env_file:

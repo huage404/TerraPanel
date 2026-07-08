@@ -1,4 +1,7 @@
-ARG NODE_IMAGE=node:22-bookworm-slim
+# 构建阶段镜像（可用 Alpine，体积小、拉取快）
+ARG NODE_IMAGE=node:22-alpine
+# 运行阶段镜像（固定 Debian/glibc，Terraria 专用服务器需要）
+ARG RUNNER_IMAGE=node:22-bookworm-slim
 FROM ${NODE_IMAGE} AS base
 RUN corepack enable && corepack prepare pnpm@10.12.1 --activate
 WORKDIR /app
@@ -15,7 +18,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY backend ./backend
 RUN pnpm --filter @terrapanel/backend build
 
-FROM ${NODE_IMAGE} AS runner
+FROM ${RUNNER_IMAGE} AS runner
 RUN apt-get update \
   && apt-get install -y --no-install-recommends bash ca-certificates wget libgcc-s1 libstdc++6 \
   && rm -rf /var/lib/apt/lists/*

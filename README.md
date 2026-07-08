@@ -102,7 +102,10 @@ Apply & Restart 后重试 `docker compose up -d --build`。
 **方式 B：在项目 `.env` 中指定镜像源**
 
 ```bash
-NODE_IMAGE=docker.m.daocloud.io/library/node:22-bookworm-slim
+# 构建阶段（Alpine，体积小）
+NODE_IMAGE=docker.m.daocloud.io/library/node:22-alpine
+# 运行阶段（Debian，Terraria 需要 glibc，不可使用 Alpine）
+RUNNER_IMAGE=docker.m.daocloud.io/library/node:22-bookworm-slim
 ```
 
 然后重新构建：
@@ -114,8 +117,8 @@ docker compose up -d --build
 **方式 C：先手动拉取再构建**
 
 ```bash
+docker pull docker.m.daocloud.io/library/node:22-alpine
 docker pull docker.m.daocloud.io/library/node:22-bookworm-slim
-docker tag docker.m.daocloud.io/library/node:22-bookworm-slim node:22-bookworm-slim
 docker compose up -d --build
 ```
 
