@@ -83,23 +83,33 @@ function App() {
           selectedInstanceId={selectedInstanceId}
         />
 
-        <div className="dashboard-grid">
-          <ControlPanel
-            status={status}
-            hasWorlds={hasWorlds}
-            loading={actionLoading}
-            onStartAll={startAll}
-            onStopAll={stopAll}
-            onRestartAll={restartAll}
-            onCreateClick={openCreateModal}
-          />
-          <InstallPanel
-            installed={status.installed}
-            progress={installProgress}
-            loading={actionLoading}
-            onInstall={install}
-          />
-        </div>
+        <details className="ops-drawer panel" open={!status.installed}>
+          <summary className="ops-drawer__summary">
+            <span className="ops-drawer__title">运维工具</span>
+            <span className="ops-drawer__hint">
+              {status.installed
+                ? '批量启停、重新安装等低频操作'
+                : '请先安装服务器程序'}
+            </span>
+          </summary>
+          <div className="ops-drawer__body dashboard-grid">
+            <ControlPanel
+              status={status}
+              hasWorlds={hasWorlds}
+              loading={actionLoading}
+              onStartAll={startAll}
+              onStopAll={stopAll}
+              onRestartAll={restartAll}
+              onCreateClick={openCreateModal}
+            />
+            <InstallPanel
+              installed={status.installed}
+              progress={installProgress}
+              loading={actionLoading}
+              onInstall={install}
+            />
+          </div>
+        </details>
 
         <LogTerminal
           instances={instances}

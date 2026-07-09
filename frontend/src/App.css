@@ -203,11 +203,112 @@
   background: var(--tp-danger);
 }
 
-/* —— Panels —— */
+/* —— Ops drawer (low-frequency tools) —— */
+.ops-drawer {
+  padding: 0;
+}
+
+.ops-drawer__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+  padding: 14px 20px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.ops-drawer__summary::-webkit-details-marker {
+  display: none;
+}
+
+.ops-drawer__summary::before {
+  content: '▸';
+  color: var(--tp-grass-bright);
+  font-size: 0.85rem;
+  transition: transform 0.15s ease;
+}
+
+.ops-drawer[open] > .ops-drawer__summary::before {
+  transform: rotate(90deg);
+}
+
+.ops-drawer__title {
+  font-family: var(--tp-font-display);
+  font-size: 1.05rem;
+  color: var(--tp-parchment);
+}
+
+.ops-drawer__hint {
+  color: var(--tp-parchment-mute);
+  font-size: 0.88rem;
+}
+
+.ops-drawer__body {
+  padding: 0 20px 18px;
+  border-top: 1px dashed rgba(234, 227, 209, 0.16);
+}
+
+.ops-section {
+  padding-top: 14px;
+}
+
+.ops-section .panel__header h3 {
+  margin: 0 0 6px;
+  font-family: var(--tp-font-display);
+  font-size: 1.05rem;
+  color: var(--tp-parchment);
+}
+
+.ops-section .panel__header p {
+  margin: 0;
+  color: var(--tp-parchment-mute);
+  font-size: 0.9rem;
+}
+
+.confirm-box {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--tp-radius);
+  background: var(--tp-dirt-deep);
+  box-shadow: var(--tp-inset);
+}
+
+.confirm-box__warning {
+  margin: 0;
+  color: #ffd0c4;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.confirm-box__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--tp-parchment-dim);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.confirm-box__check input {
+  margin-top: 3px;
+  accent-color: var(--tp-danger);
+}
+
+.confirm-box__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 8px 24px;
 }
 
 .panel {
@@ -344,6 +445,7 @@
   color: var(--tp-link);
   font-size: 0.88rem;
   font-family: var(--tp-font-mono);
+  font-weight: 600;
 }
 
 .world-card__actions {

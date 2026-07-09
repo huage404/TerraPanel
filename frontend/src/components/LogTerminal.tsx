@@ -81,7 +81,7 @@ export function LogTerminal({
           <h2>实时日志终端</h2>
           <p>
             {selectedInstance
-              ? `${selectedInstance.worldName} (:${selectedInstance.port}) · ${getStatusLabel(selectedInstance.status)}`
+              ? `${selectedInstance.worldName} · 端口 ${selectedInstance.port} · ${getStatusLabel(selectedInstance.status)}`
               : '选择实例以查看日志并发送命令'}
           </p>
         </div>
@@ -97,7 +97,7 @@ export function LogTerminal({
               onClick={() => onSelectInstance(instance.id)}
             >
               {instance.worldName}
-              <span className="terminal-tab__port">:{instance.port}</span>
+              <span className="terminal-tab__port">端口 {instance.port}</span>
             </button>
           ))}
         </div>

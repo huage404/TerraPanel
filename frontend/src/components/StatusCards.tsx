@@ -17,39 +17,36 @@ const STATUS_CLASS: Record<ServerStatusDto['status'], string> = {
 export function StatusCards({ status, connected }: StatusCardsProps) {
   const cards = [
     {
-      label: '聚合状态',
+      label: '整体状态',
       value: getStatusLabel(status.status),
       badge: STATUS_CLASS[status.status],
     },
     {
-      label: '运行实例',
+      label: '运行中的世界',
       value: `${status.runningCount} / ${status.totalInstances}`,
     },
     {
-      label: '总在线玩家',
-      value: `${status.totalPlayerCount}`,
+      label: '在线玩家',
+      value: String(status.totalPlayerCount),
     },
     {
-      label: '主端口',
-      value: String(status.port),
-    },
-    {
-      label: '运行时长',
+      label: '最长运行时长',
       value: formatUptime(status.uptimeSeconds),
     },
     {
-      label: '安装状态',
-      value: status.installed ? '已安装' : '未安装',
+      label: '服务器程序',
+      value: status.installed ? '已就绪' : '未安装',
+      badge: status.installed ? 'badge-running' : 'badge-stopped',
     },
     {
-      label: '实时连接',
-      value: connected ? '已连接' : '未连接',
+      label: '面板连接',
+      value: connected ? '实时同步中' : '已断开',
       badge: connected ? 'badge-running' : 'badge-stopped',
     },
   ]
 
   return (
-    <section className="status-grid">
+    <section className="status-grid" aria-label="运行概览">
       {cards.map((card) => (
         <article key={card.label} className="status-card">
           <span className="status-card__label">{card.label}</span>

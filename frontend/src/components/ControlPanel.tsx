@@ -25,11 +25,11 @@ export function ControlPanel({
   const hasStoppedInstances = status.totalInstances > status.runningCount
 
   return (
-    <section className="panel control-panel">
+    <section className="ops-section control-panel">
       <div className="panel__header">
-        <h2>批量控制</h2>
+        <h3>批量控制</h3>
         <p>
-          已注册 {status.totalInstances} 个实例，{status.runningCount} 个运行中
+          对已注册的 {status.totalInstances} 个世界实例统一启停（日常请优先在世界卡片上操作）
         </p>
       </div>
 
@@ -75,19 +75,19 @@ export function ControlPanel({
 
       {!status.installed && (
         <p className="control-panel__hint">
-          服务器尚未安装，请先使用下方「一键安装」完成部署。
+          服务器尚未安装，请先完成下方安装后再批量控制。
         </p>
       )}
 
       {status.installed && !hasWorlds && (
         <p className="control-panel__hint">
-          尚未检测到世界文件，请先创建世界后再启动服务器。
+          尚未检测到世界文件，请先创建世界。
         </p>
       )}
 
       {status.installed && hasWorlds && status.totalInstances === 0 && (
         <p className="control-panel__hint">
-          从世界列表单独启动实例，或使用「全部启动」批量运行。
+          可从世界列表单独启动，或使用「全部启动」。
         </p>
       )}
     </section>

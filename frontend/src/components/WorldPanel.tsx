@@ -103,8 +103,8 @@ export function WorldPanel({
                     <span className={`world-card__status badge-${world.status === 'running' ? 'running' : world.status === 'error' ? 'error' : world.status === 'starting' || world.status === 'stopping' ? 'starting' : 'stopped'}`}>
                       {getStatusLabel(world.status)}
                     </span>
-                    {world.port && (
-                      <span className="world-card__port">:{world.port}</span>
+                    {world.port != null && (
+                      <span className="world-card__port">端口 {world.port}</span>
                     )}
                   </div>
                   <p className="world-card__meta">
