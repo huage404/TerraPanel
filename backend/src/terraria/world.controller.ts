@@ -1,7 +1,19 @@
-import { Body, Controller, Delete, Get, Patch, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Patch,
+  Post,
+  Query,
+  StreamableFile,
+} from '@nestjs/common';
 import {
   ApiOkResponse,
   ApiOperation,
+  ApiProduces,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateWorldDto } from './dto/create-world.dto';
@@ -23,6 +35,31 @@ export class WorldController {
   @ApiOkResponse({ type: WorldsResponseDto })
   listWorlds(): Promise<WorldsResponseDto> {
     return this.worldService.listWorlds();
+  }
+
+  @Get('export')
+  @ApiOperation({
+    summary: '导出世界文件为 zip（含 .wld 及 .wld.bak 等关联文件）',
+  })
+  @ApiQuery({
+    name: 'path',
+    required: true,
+    description: '世界 .wld 绝对路径',
+  })
+  @ApiProduces('application/zip')
+  async exportWorld(@Query('path') path: string): Promise<StreamableFile> {
+    if (!path?.trim()) {
+      throw new BadRequestException('缺少世界路径');
+    }
+
+    const archive = await this.worldService.exportWorld(path.trim());
+    const asciiName = archive.fileName.replace(/[^\x20-\x7E]/g, '_');
+    const encodedName = encodeURIComponent(archive.fileName);
+
+    return new StreamableFile(archive.buffer, {
+      type: 'application/zip',
+      disposition: `attachment; filename="${asciiName}"; filename*=UTF-8''${encodedName}`,
+    });
   }
 
   @Post()

@@ -65,4 +65,33 @@ export const worldsApi = {
       method: 'DELETE',
       body: JSON.stringify({ path }),
     }),
+
+  export: async (path: string): Promise<void> => {
+    const response = await fetch(
+      `${API_BASE}/worlds/export?path=${encodeURIComponent(path)}`,
+    )
+
+    if (!response.ok) {
+      throw new Error(await parseError(response))
+    }
+
+    const blob = await response.blob()
+    const disposition = response.headers.get('Content-Disposition') ?? ''
+    const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(disposition)
+    const plainMatch = /filename="?([^";]+)"?/i.exec(disposition)
+    const fileName = utf8Match
+      ? decodeURIComponent(utf8Match[1])
+      : plainMatch
+        ? plainMatch[1]
+        : 'world-export.zip'
+
+    const objectUrl = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = objectUrl
+    anchor.download = fileName
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(objectUrl)
+  },
 }

@@ -381,6 +381,18 @@ export function useTerrariaPanel() {
     [selectedInstanceId],
   )
 
+  const exportWorld = useCallback(async (path: string) => {
+    setActionLoading(`export:${path}`)
+    setError(null)
+    try {
+      await worldsApi.export(path)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '导出失败')
+    } finally {
+      setActionLoading(null)
+    }
+  }, [])
+
   const selectInstance = useCallback((instanceId: string) => {
     setSelectedInstanceId(instanceId)
     subscribeInstance(instanceId)
@@ -429,6 +441,7 @@ export function useTerrariaPanel() {
     stopWorld,
     restartWorld,
     deleteWorld,
+    exportWorld,
     selectInstance,
     openCreateModal,
     closeCreateModal,

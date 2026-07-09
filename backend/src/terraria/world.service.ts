@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import AdmZip from 'adm-zip';
 import { access, mkdir, readdir, rm, stat } from 'node:fs/promises';
 import { basename, join, resolve, sep } from 'node:path';
 import { ServerStatus } from '../common/enums/server-status.enum';
@@ -14,6 +15,11 @@ import {
 } from './dto/worlds-response.dto';
 import { WorldSummaryDto } from './dto/world-summary.dto';
 import { InstanceManagerService } from './instance-manager.service';
+
+export interface WorldExportArchive {
+  fileName: string;
+  buffer: Buffer;
+}
 
 @Injectable()
 export class WorldService {
@@ -163,6 +169,40 @@ export class WorldService {
 
     await this.removeWorldFiles(path);
     return this.listWorlds();
+  }
+
+  async exportWorld(path: string): Promise<WorldExportArchive> {
+    this.assertInstalled();
+    this.assertWorldPathSafe(path);
+    await this.assertWorldFileExists(path);
+
+    const worldDir = resolve(join(path, '..'));
+    const worldBaseName = basename(path, '.wld');
+    const entries = await readdir(worldDir);
+    const relatedFiles = entries.filter(
+      (entry) =>
+        entry === `${worldBaseName}.wld` ||
+        entry.startsWith(`${worldBaseName}.wld.`),
+    );
+
+    if (relatedFiles.length === 0) {
+      throw new NotFoundException('世界不存在');
+    }
+
+    const zip = new AdmZip();
+    for (const entry of relatedFiles) {
+      zip.addLocalFile(join(worldDir, entry));
+    }
+
+    const stamp = new Date()
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\.\d{3}Z$/, 'Z');
+
+    return {
+      fileName: `${worldBaseName}-${stamp}.zip`,
+      buffer: zip.toBuffer(),
+    };
   }
 
   private getWorldsDir(dataPath: string): string {

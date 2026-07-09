@@ -29,6 +29,7 @@ function App() {
     startWorld,
     stopWorld,
     restartWorld,
+    exportWorld,
     deleteWorld,
     selectInstance,
     openCreateModal,
@@ -78,6 +79,7 @@ function App() {
           onStartWorld={startWorld}
           onStopWorld={stopWorld}
           onRestartWorld={restartWorld}
+          onExportWorld={exportWorld}
           onDeleteWorld={deleteWorld}
           onSelectInstance={selectInstance}
           selectedInstanceId={selectedInstanceId}

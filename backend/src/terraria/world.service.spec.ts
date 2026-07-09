@@ -129,4 +129,23 @@ describe('WorldService', () => {
     expect(instanceManager.deleteInstance).toHaveBeenCalledWith('instance-remove');
     expect(result.worlds).toHaveLength(0);
   });
+
+  it('exports world files as a zip archive', async () => {
+    const worldsDir = join(dataPath, 'worlds');
+    await mkdir(worldsDir, { recursive: true });
+    const worldPath = join(worldsDir, 'backup-me.wld');
+    await writeFile(worldPath, 'world-data');
+    await writeFile(`${worldPath}.bak`, 'backup');
+
+    const archive = await service.exportWorld(worldPath);
+
+    expect(archive.fileName).toMatch(/^backup-me-.+\.zip$/);
+    expect(archive.buffer.length).toBeGreaterThan(0);
+  });
+
+  it('rejects export for paths outside worlds directory', async () => {
+    await expect(service.exportWorld('/tmp/evil.wld')).rejects.toThrow(
+      '无效的世界路径',
+    );
+  });
 });

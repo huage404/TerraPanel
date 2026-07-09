@@ -19,6 +19,7 @@ interface WorldPanelProps {
   onStartWorld: (path: string) => void
   onStopWorld: (path: string) => void
   onRestartWorld: (path: string) => void
+  onExportWorld: (path: string) => void
   onDeleteWorld: (path: string, worldName: string, instanceId: string | null) => void
   onSelectInstance: (instanceId: string) => void
 }
@@ -37,6 +38,7 @@ export function WorldPanel({
   onStartWorld,
   onStopWorld,
   onRestartWorld,
+  onExportWorld,
   onDeleteWorld,
   onSelectInstance,
 }: WorldPanelProps) {
@@ -87,6 +89,7 @@ export function WorldPanel({
               actionLoading === worldActionKey('start', world.path) ||
               actionLoading === worldActionKey('stop', world.path) ||
               actionLoading === worldActionKey('restart', world.path) ||
+              actionLoading === worldActionKey('export', world.path) ||
               actionLoading === worldActionKey('delete', world.path)
 
             const isSelected = world.instanceId === selectedInstanceId
@@ -154,6 +157,17 @@ export function WorldPanel({
                     {actionLoading === worldActionKey('restart', world.path)
                       ? '重启中...'
                       : '重启'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    disabled={busy}
+                    title="导出世界文件（zip），用于备份或迁移"
+                    onClick={() => onExportWorld(world.path)}
+                  >
+                    {actionLoading === worldActionKey('export', world.path)
+                      ? '导出中...'
+                      : '导出'}
                   </button>
                   <button
                     type="button"
