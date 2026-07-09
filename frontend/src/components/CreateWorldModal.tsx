@@ -176,6 +176,10 @@ export function CreateWorldModal({
       ...form,
       worldName: form.worldName.trim(),
       worldSeed: form.worldSeed?.trim() ?? '',
+      password: form.password?.trim() || undefined,
+      motd: form.motd?.trim() || undefined,
+      port: form.port,
+      maxPlayers: form.maxPlayers,
     })
   }
 
@@ -397,6 +401,70 @@ export function CreateWorldModal({
                   placeholder="留空则随机生成"
                   onChange={(event) =>
                     setForm((prev) => ({ ...prev, worldSeed: event.target.value }))
+                  }
+                />
+              </label>
+
+              <label className="field">
+                <span>端口（可选）</span>
+                <input
+                  type="number"
+                  min={1024}
+                  max={65535}
+                  value={form.port ?? ''}
+                  placeholder="留空则自动分配；冲突时也会自动换端口"
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      port: event.target.value
+                        ? Number(event.target.value)
+                        : undefined,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="field">
+                <span>最大玩家数（可选）</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={255}
+                  value={form.maxPlayers ?? ''}
+                  placeholder="留空使用系统默认"
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      maxPlayers: event.target.value
+                        ? Number(event.target.value)
+                        : undefined,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="field">
+                <span>密码（可选）</span>
+                <input
+                  type="text"
+                  value={form.password ?? ''}
+                  maxLength={64}
+                  placeholder="留空表示无密码或使用默认"
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, password: event.target.value }))
+                  }
+                />
+              </label>
+
+              <label className="field">
+                <span>MOTD（可选）</span>
+                <input
+                  type="text"
+                  value={form.motd ?? ''}
+                  maxLength={128}
+                  placeholder="每日消息"
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, motd: event.target.value }))
                   }
                 />
               </label>

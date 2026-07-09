@@ -89,6 +89,10 @@ export class WorldService {
       worldSize: dto.worldSize ?? 2,
       worldSeed: dto.worldSeed?.trim() ?? '',
       worldDifficulty: dto.worldDifficulty ?? 0,
+      port: dto.port != null ? this.instanceManager.suggestPort(dto.port) : undefined,
+      maxPlayers: dto.maxPlayers,
+      password: dto.password,
+      motd: dto.motd,
       allowMissingWorld: true,
     });
 

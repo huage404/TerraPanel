@@ -118,6 +118,10 @@ describe('WorldService', () => {
       worldSize: 3,
       worldSeed: 'seed',
       worldDifficulty: 1,
+      port: undefined,
+      maxPlayers: undefined,
+      password: undefined,
+      motd: undefined,
       allowMissingWorld: true,
     });
     expect(instanceManager.start).toHaveBeenCalledWith('instance-1');

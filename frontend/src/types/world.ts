@@ -24,6 +24,10 @@ export interface CreateWorldPayload {
   worldSize: number
   worldSeed?: string
   worldDifficulty: number
+  port?: number
+  maxPlayers?: number
+  password?: string
+  motd?: string
 }
 
 export interface WorldExportMeta {
@@ -71,6 +75,10 @@ export const DEFAULT_CREATE_WORLD_FORM: CreateWorldPayload = {
   worldSize: 2,
   worldSeed: '',
   worldDifficulty: 0,
+  port: undefined,
+  maxPlayers: undefined,
+  password: '',
+  motd: '',
 }
 
 export const WORLD_EXPORT_META_FILENAME = 'terrapanel-meta.json'

@@ -37,4 +37,30 @@ export class CreateWorldDto {
   @Min(0)
   @Max(3)
   worldDifficulty?: number;
+
+  @ApiPropertyOptional({ example: 7777 })
+  @IsOptional()
+  @IsInt()
+  @Min(1024)
+  @Max(65535)
+  port?: number;
+
+  @ApiPropertyOptional({ example: 8 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(255)
+  maxPlayers?: number;
+
+  @ApiPropertyOptional({ example: '' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  password?: string;
+
+  @ApiPropertyOptional({ example: 'Welcome to TerraPanel Server' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  motd?: string;
 }
