@@ -81,8 +81,6 @@ function App() {
           onRestartWorld={restartWorld}
           onExportWorld={exportWorld}
           onDeleteWorld={deleteWorld}
-          onSelectInstance={selectInstance}
-          selectedInstanceId={selectedInstanceId}
         />
 
         <details className="ops-drawer panel" open={!status.installed}>

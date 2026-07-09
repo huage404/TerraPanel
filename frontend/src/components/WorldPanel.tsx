@@ -14,14 +14,12 @@ interface WorldPanelProps {
   worlds: WorldSummary[]
   loading: boolean
   actionLoading: string | null
-  selectedInstanceId: string | null
   onCreateClick: () => void
   onStartWorld: (path: string) => void
   onStopWorld: (path: string) => void
   onRestartWorld: (path: string) => void
   onExportWorld: (path: string) => void
   onDeleteWorld: (path: string, worldName: string, instanceId: string | null) => void
-  onSelectInstance: (instanceId: string) => void
 }
 
 function worldActionKey(prefix: string, path: string): string {
@@ -33,14 +31,12 @@ export function WorldPanel({
   worlds,
   loading,
   actionLoading,
-  selectedInstanceId,
   onCreateClick,
   onStartWorld,
   onStopWorld,
   onRestartWorld,
   onExportWorld,
   onDeleteWorld,
-  onSelectInstance,
 }: WorldPanelProps) {
   if (!installed) {
     return null
@@ -92,13 +88,12 @@ export function WorldPanel({
               actionLoading === worldActionKey('export', world.path) ||
               actionLoading === worldActionKey('delete', world.path)
 
-            const isSelected = world.instanceId === selectedInstanceId
             const isRunning = world.status === 'running'
 
             return (
               <article
                 key={world.path}
-                className={`world-card${isSelected ? ' world-card--active' : ''}${isRunning ? ' world-card--running' : ''}`}
+                className={`world-card${isRunning ? ' world-card--running' : ''}`}
               >
                 <div className="world-card__main">
                   <div className="world-card__title-row">
@@ -118,16 +113,6 @@ export function WorldPanel({
                 </div>
 
                 <div className="world-card__actions">
-                  {world.instanceId && (
-                    <button
-                      type="button"
-                      className={`btn btn-ghost${isSelected ? ' btn-ghost--active' : ''}`}
-                      disabled={busy}
-                      onClick={() => onSelectInstance(world.instanceId!)}
-                    >
-                      日志
-                    </button>
-                  )}
                   <button
                     type="button"
                     className="btn btn-success"
