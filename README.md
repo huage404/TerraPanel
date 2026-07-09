@@ -143,6 +143,30 @@ docker pull docker.m.daocloud.io/library/node:22-bookworm-slim
 docker compose up -d --build
 ```
 
+## 功能说明
+
+### 世界管理
+
+- **创建世界**：在面板中填写名称、尺寸、难度、种子，由服务器生成新存档并启动实例。
+- **导入世界**：在「创建世界」弹窗中可选上传 `.wld` 或本面板导出的 `.zip`。上传后进入导入模式：
+  - 尺寸 / 难度 / 种子以存档为准（表单中隐藏，避免误导）
+  - 若 zip 含 `terrapanel-meta.json`，会预填名称、端口、密码、MOTD 等，可按本机情况修改
+  - 同名世界已存在时拒绝导入；建议端口冲突时自动改用空闲端口
+- **导出世界**：从世界列表导出 zip，内容包括：
+  - `.wld` 及 `.wld.bak` 等关联存档文件
+  - `terrapanel-meta.json`（开服元数据：名称、端口、密码、MOTD 等，**不含**绝对路径）
+- **启停 / 删除**：按世界独立管理进程；删除前需先停止对应实例。
+
+> 存档（`.wld`）与开服配置（端口、密码等）是两层信息。导出的 meta 仅用于导入时预填，不会静默强制占用本机端口。
+
+### 运维工具
+
+「运维工具」默认折叠（未安装服务器时展开），包含批量启停与一键安装。已安装后「重新安装」需勾选确认，降低误触风险。
+
+### 实时日志终端
+
+- 按实例切换日志 Tab，发送控制台命令
+- 输入 `/` 可弹出命令补全列表（中文说明）；实际发送时会去掉前导 `/`
 
 ## 配置说明
 
@@ -204,8 +228,11 @@ pnpm --filter @terrapanel/frontend dev
 | POST | `/api/instances/:id/stop` | 停止单个实例 |
 | GET | `/api/worlds` | 世界列表（含各世界实例状态） |
 | POST | `/api/worlds` | 创建世界并启动生成 |
+| POST | `/api/worlds/import` | 导入世界（multipart：`file` + `worldName` 等） |
+| GET | `/api/worlds/export?path=` | 导出世界 zip（含存档与 `terrapanel-meta.json`） |
 | POST | `/api/worlds/start` | 启动指定世界 |
 | POST | `/api/worlds/stop` | 停止指定世界 |
+| POST | `/api/worlds/restart` | 重启指定世界 |
 | DELETE | `/api/worlds` | 删除世界及关联实例（需先停止） |
 | GET | `/api/config` | 读取配置 |
 

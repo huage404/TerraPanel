@@ -21,7 +21,6 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { memoryStorage } from 'multer';
 import { CreateWorldDto } from './dto/create-world.dto';
 import { ImportWorldDto } from './dto/import-world.dto';
 import { SelectWorldDto } from './dto/select-world.dto';
@@ -99,7 +98,8 @@ export class WorldController {
   @ApiOkResponse({ type: CreateWorldResponseDto })
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: memoryStorage(),
+      // Default multer storage is memory; avoid direct `multer` import
+      // (pnpm/Docker prod installs do not hoist transitive deps).
       limits: { fileSize: 512 * 1024 * 1024 },
     }),
   )
