@@ -63,6 +63,49 @@ export function CreateWorldModal({
     }
   }, [open])
 
+  useEffect(() => {
+    if (!open) return
+
+    const { body } = document
+    const previousOverflow = body.style.overflow
+    const previousPaddingRight = body.style.paddingRight
+    const scrollbarGap = window.innerWidth - document.documentElement.clientWidth
+
+    body.style.overflow = 'hidden'
+    if (scrollbarGap > 0) {
+      body.style.paddingRight = `${scrollbarGap}px`
+    }
+
+    const preventBackgroundScroll = (event: WheelEvent | TouchEvent) => {
+      const target = event.target
+      if (!(target instanceof Element)) {
+        event.preventDefault()
+        return
+      }
+
+      const scrollable = target.closest('.modal__form')
+      if (!scrollable) {
+        event.preventDefault()
+      }
+    }
+
+    document.addEventListener('wheel', preventBackgroundScroll, {
+      passive: false,
+      capture: true,
+    })
+    document.addEventListener('touchmove', preventBackgroundScroll, {
+      passive: false,
+      capture: true,
+    })
+
+    return () => {
+      body.style.overflow = previousOverflow
+      body.style.paddingRight = previousPaddingRight
+      document.removeEventListener('wheel', preventBackgroundScroll, true)
+      document.removeEventListener('touchmove', preventBackgroundScroll, true)
+    }
+  }, [open])
+
   if (!open) {
     return null
   }
