@@ -1,12 +1,40 @@
 :root {
-  color: #e6edf3;
-  background: #0b1017;
-  font-family:
-    Inter,
-    'Segoe UI',
-    system-ui,
-    -apple-system,
-    sans-serif;
+  /* Terraria Wiki–aligned palette */
+  --tp-sky: #b8bad0;
+  --tp-sky-deep: #8a8eae;
+  --tp-night: #111431;
+  --tp-night-mid: #29305c;
+  --tp-dirt: #5a433a;
+  --tp-dirt-deep: #3f2e28;
+  --tp-dirt-light: #6e5448;
+  --tp-dirt-raised: #644c42;
+  --tp-parchment: #eae3d1;
+  --tp-parchment-dim: #cfc6b0;
+  --tp-parchment-mute: #a89f8a;
+  --tp-grass: #5a9e3e;
+  --tp-grass-bright: #7ec850;
+  --tp-grass-dark: #3d6e2a;
+  --tp-link: #9fecf0;
+  --tp-link-soft: #c4ebd0;
+  --tp-gold: #e8c547;
+  --tp-gold-dim: #c4a035;
+  --tp-danger: #e07060;
+  --tp-danger-deep: #a8483c;
+  --tp-success: #7ec850;
+  --tp-border-light: rgba(255, 255, 255, 0.12);
+  --tp-border-dark: rgba(13, 4, 2, 0.35);
+  --tp-inset: inset 1px 1px 0 var(--tp-border-light),
+    inset -1px -1px 0 var(--tp-border-dark);
+  --tp-outset: 1px 1px 0 var(--tp-border-dark), -1px -1px 0 var(--tp-border-light);
+  --tp-radius: 6px;
+  --tp-radius-lg: 10px;
+  --tp-font-display: 'Pixelify Sans', 'Segoe UI', sans-serif;
+  --tp-font-body: 'Source Sans 3', 'Segoe UI', sans-serif;
+  --tp-font-mono: 'IBM Plex Mono', ui-monospace, Menlo, Monaco, Consolas, monospace;
+
+  color: var(--tp-parchment);
+  background: var(--tp-sky);
+  font-family: var(--tp-font-body);
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
@@ -28,13 +56,15 @@ body,
 body {
   margin: 0;
   background:
-    radial-gradient(circle at top, rgba(56, 189, 248, 0.08), transparent 32%),
-    radial-gradient(circle at 80% 0%, rgba(74, 222, 128, 0.08), transparent 24%),
-    #0b1017;
+    radial-gradient(ellipse 70% 45% at 72% 12%, rgba(255, 214, 120, 0.28), transparent 50%),
+    radial-gradient(ellipse 50% 35% at 18% 8%, rgba(160, 175, 220, 0.4), transparent 55%),
+    linear-gradient(180deg, #d0d2e4 0%, var(--tp-sky) 38%, #9a9cb8 78%, #7a7c9a 100%);
+  background-attachment: fixed;
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -45,4 +75,9 @@ button {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+::selection {
+  background: rgba(126, 200, 80, 0.35);
+  color: var(--tp-parchment);
 }

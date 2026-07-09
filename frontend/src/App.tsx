@@ -42,16 +42,20 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <div>
-          <p className="app-header__eyebrow">Terraria Server Manager</p>
-          <h1>TerraPanel</h1>
-          <p className="app-header__subtitle">泰拉瑞亚多世界服务器 Web 管理面板</p>
+        <div className="app-header__brand">
+          <img className="app-header__mark" src="/favicon.svg" alt="" width={48} height={48} />
+          <div>
+            <p className="app-header__eyebrow">Terraria Server Manager</p>
+            <h1>TerraPanel</h1>
+            <p className="app-header__subtitle">泰拉瑞亚多世界服务器 Web 管理面板</p>
+          </div>
         </div>
         <div className="app-header__status">
           <span className={connected ? 'dot dot--online' : 'dot dot--offline'} />
           {connected ? 'WebSocket 已连接' : 'WebSocket 未连接'}
         </div>
       </header>
+      <div className="grass-divider" aria-hidden="true" />
 
       {error && (
         <div className="alert alert-error">
