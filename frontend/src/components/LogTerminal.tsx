@@ -33,17 +33,28 @@ export function LogTerminal({
 }: LogTerminalProps) {
   const [input, setInput] = useState('')
   const viewportRef = useRef<HTMLDivElement>(null)
-  const bottomRef = useRef<HTMLDivElement>(null)
   const stickToBottomRef = useRef(true)
   const autoScrollingRef = useRef(false)
+  const selectedInstanceIdRef = useRef(selectedInstanceId)
 
   const disabled = selectedInstance?.status !== 'running'
 
   useLayoutEffect(() => {
+    const switched = selectedInstanceIdRef.current !== selectedInstanceId
+    selectedInstanceIdRef.current = selectedInstanceId
+
+    if (switched) {
+      stickToBottomRef.current = true
+    }
+
     if (!stickToBottomRef.current) return
 
+    const el = viewportRef.current
+    if (!el) return
+
+    // Only scroll the terminal viewport — never scrollIntoView (that moves the page).
     autoScrollingRef.current = true
-    bottomRef.current?.scrollIntoView({ block: 'end' })
+    el.scrollTop = el.scrollHeight
     requestAnimationFrame(() => {
       autoScrollingRef.current = false
     })
@@ -114,17 +125,14 @@ export function LogTerminal({
           ) : logs.length === 0 ? (
             <div className="terminal__empty">等待日志输出...</div>
           ) : (
-            <>
-              {logs.map((entry) => (
-                <div key={entry.id} className={`terminal-line ${streamClass(entry.stream)}`}>
-                  <span className="terminal-line__time">
-                    [{formatTime(entry.timestamp)}]
-                  </span>
-                  <span className="terminal-line__text">{entry.message}</span>
-                </div>
-              ))}
-              <div ref={bottomRef} aria-hidden="true" />
-            </>
+            logs.map((entry) => (
+              <div key={entry.id} className={`terminal-line ${streamClass(entry.stream)}`}>
+                <span className="terminal-line__time">
+                  [{formatTime(entry.timestamp)}]
+                </span>
+                <span className="terminal-line__text">{entry.message}</span>
+              </div>
+            ))
           )}
         </div>
 

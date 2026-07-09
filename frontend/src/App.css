@@ -729,9 +729,11 @@
 .terminal__viewport {
   height: 420px;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 14px 16px;
   font-family: var(--tp-font-mono);
   font-size: 0.86rem;
+  scrollbar-gutter: auto;
 }
 
 .terminal__empty {
