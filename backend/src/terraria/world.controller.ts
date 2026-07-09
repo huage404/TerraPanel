@@ -8,15 +8,22 @@ import {
   Post,
   Query,
   StreamableFile,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
+  ApiBody,
+  ApiConsumes,
   ApiOkResponse,
   ApiOperation,
   ApiProduces,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { memoryStorage } from 'multer';
 import { CreateWorldDto } from './dto/create-world.dto';
+import { ImportWorldDto } from './dto/import-world.dto';
 import { SelectWorldDto } from './dto/select-world.dto';
 import { WorldActionDto } from './dto/world-action.dto';
 import {
@@ -39,7 +46,8 @@ export class WorldController {
 
   @Get('export')
   @ApiOperation({
-    summary: '导出世界文件为 zip（含 .wld 及 .wld.bak 等关联文件）',
+    summary:
+      '导出世界为 zip（含 .wld / .wld.bak 及 terrapanel-meta.json 开服元数据）',
   })
   @ApiQuery({
     name: 'path',
@@ -67,6 +75,39 @@ export class WorldController {
   @ApiOkResponse({ type: CreateWorldResponseDto })
   createWorld(@Body() dto: CreateWorldDto): Promise<CreateWorldResponseDto> {
     return this.worldService.createWorld(dto);
+  }
+
+  @Post('import')
+  @ApiOperation({
+    summary: '导入已有世界文件（.wld 或导出 zip）并创建实例启动',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file', 'worldName'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        worldName: { type: 'string' },
+        port: { type: 'integer' },
+        maxPlayers: { type: 'integer' },
+        password: { type: 'string' },
+        motd: { type: 'string' },
+      },
+    },
+  })
+  @ApiOkResponse({ type: CreateWorldResponseDto })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 512 * 1024 * 1024 },
+    }),
+  )
+  importWorld(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: ImportWorldDto,
+  ): Promise<CreateWorldResponseDto> {
+    return this.worldService.importWorld(file, dto);
   }
 
   @Post('start')

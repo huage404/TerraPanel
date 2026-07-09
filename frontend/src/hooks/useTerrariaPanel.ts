@@ -8,7 +8,7 @@ import type {
   LogEntry,
   ServerStatusDto,
 } from '../types/terraria'
-import type { CreateWorldPayload, WorldSummary } from '../types/world'
+import type { CreateWorldPayload, ImportWorldPayload, WorldSummary } from '../types/world'
 
 const DEFAULT_INSTALL: InstallProgressDto = {
   phase: 'idle',
@@ -287,6 +287,31 @@ export function useTerrariaPanel() {
     }
   }, [])
 
+  const importWorld = useCallback(async (payload: ImportWorldPayload) => {
+    setActionLoading('createWorld')
+    setError(null)
+    try {
+      const result = await worldsApi.import(payload)
+      setWorlds(result.worlds)
+      setStatus(result.status)
+      if (result.instance) {
+        setSelectedInstanceId(result.instance.id)
+        setInstances((prev) => {
+          const index = prev.findIndex((item) => item.id === result.instance!.id)
+          if (index === -1) return [...prev, result.instance!]
+          const next = [...prev]
+          next[index] = result.instance!
+          return next
+        })
+      }
+      setCreateModalOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '导入世界失败')
+    } finally {
+      setActionLoading(null)
+    }
+  }, [])
+
   const startWorld = useCallback(
     async (path: string) => {
       setActionLoading(`start:${path}`)
@@ -437,6 +462,7 @@ export function useTerrariaPanel() {
     restartAll,
     install,
     createWorld,
+    importWorld,
     startWorld,
     stopWorld,
     restartWorld,

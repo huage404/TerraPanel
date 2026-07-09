@@ -26,6 +26,7 @@ function App() {
     restartAll,
     install,
     createWorld,
+    importWorld,
     startWorld,
     stopWorld,
     restartWorld,
@@ -125,7 +126,8 @@ function App() {
         open={createModalOpen}
         loading={actionLoading === 'createWorld'}
         onClose={closeCreateModal}
-        onSubmit={createWorld}
+        onCreate={createWorld}
+        onImport={importWorld}
       />
     </div>
   )

@@ -65,6 +65,27 @@ export class InstanceManagerService implements OnModuleInit, OnModuleDestroy {
       : null;
   }
 
+  findConfigByWorldPath(worldPath: string): InstanceConfig | null {
+    const instance = this.findInstanceByWorldPath(worldPath);
+    return instance ? { ...instance.getConfig() } : null;
+  }
+
+  isPortAvailable(port: number): boolean {
+    try {
+      this.assertPortAvailable(port);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  suggestPort(preferred?: number): number {
+    if (preferred != null && this.isPortAvailable(preferred)) {
+      return preferred;
+    }
+    return this.allocatePort();
+  }
+
   getAggregateStatus(): ServerStatusDto {
     const snapshots = this.getAllStatuses();
     const installed = this.appConfigService.isInstalledSync();

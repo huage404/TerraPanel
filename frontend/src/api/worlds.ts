@@ -1,6 +1,7 @@
 import type {
   CreateWorldPayload,
   CreateWorldResponse,
+  ImportWorldPayload,
   WorldsResponse,
 } from '../types/world'
 
@@ -41,6 +42,33 @@ export const worldsApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+
+  import: async (payload: ImportWorldPayload): Promise<CreateWorldResponse> => {
+    const form = new FormData()
+    form.append('file', payload.file)
+    form.append('worldName', payload.worldName)
+    if (payload.port != null) form.append('port', String(payload.port))
+    if (payload.maxPlayers != null) {
+      form.append('maxPlayers', String(payload.maxPlayers))
+    }
+    if (payload.password != null && payload.password !== '') {
+      form.append('password', payload.password)
+    }
+    if (payload.motd != null && payload.motd !== '') {
+      form.append('motd', payload.motd)
+    }
+
+    const response = await fetch(`${API_BASE}/worlds/import`, {
+      method: 'POST',
+      body: form,
+    })
+
+    if (!response.ok) {
+      throw new Error(await parseError(response))
+    }
+
+    return response.json() as Promise<CreateWorldResponse>
+  },
 
   start: (path: string) =>
     request<WorldsResponse>('/worlds/start', {

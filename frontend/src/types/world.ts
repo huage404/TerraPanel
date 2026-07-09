@@ -26,6 +26,28 @@ export interface CreateWorldPayload {
   worldDifficulty: number
 }
 
+export interface WorldExportMeta {
+  version: 1
+  exportedAt: string
+  worldName: string
+  port?: number
+  maxPlayers?: number
+  password?: string
+  motd?: string
+  worldSize?: number
+  worldSeed?: string
+  worldDifficulty?: number
+}
+
+export interface ImportWorldPayload {
+  worldName: string
+  file: File
+  port?: number
+  maxPlayers?: number
+  password?: string
+  motd?: string
+}
+
 export interface CreateWorldResponse extends WorldsResponse {
   status: ServerStatusDto
   instance?: InstanceStatusDto
@@ -50,3 +72,5 @@ export const DEFAULT_CREATE_WORLD_FORM: CreateWorldPayload = {
   worldSeed: '',
   worldDifficulty: 0,
 }
+
+export const WORLD_EXPORT_META_FILENAME = 'terrapanel-meta.json'

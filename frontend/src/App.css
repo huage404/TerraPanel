@@ -550,6 +550,33 @@
   font-size: 0.92rem;
 }
 
+.field__hint {
+  color: var(--tp-parchment-mute);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.field input[type='file'] {
+  padding: 8px;
+  color: var(--tp-parchment-dim);
+}
+
+.modal__notice {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--tp-radius);
+  background: color-mix(in srgb, var(--tp-link) 12%, var(--tp-dirt-deep));
+  color: var(--tp-parchment-dim);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.modal__notice--muted {
+  background: var(--tp-dirt-deep);
+  color: var(--tp-parchment-mute);
+}
+
 .field input,
 .field select {
   width: 100%;
