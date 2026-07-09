@@ -519,8 +519,9 @@
   justify-content: space-between;
   gap: 12px;
   flex: none;
-  padding: 20px 22px 0;
+  padding: 20px 22px 12px;
   margin-bottom: 0;
+  border-bottom: 1px dashed rgba(234, 227, 209, 0.14);
 }
 
 .modal__header h2 {
@@ -548,14 +549,32 @@
 }
 
 .modal__form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.modal__body {
   display: grid;
   gap: 14px;
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 16px 22px 22px;
+  padding: 16px 22px;
   -webkit-overflow-scrolling: touch;
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: none;
+  margin: 0;
+  padding: 14px 22px 18px;
+  border-top: 1px dashed rgba(234, 227, 209, 0.14);
+  background: var(--tp-dirt);
 }
 
 .field {
@@ -615,21 +634,6 @@
 .field option {
   background: var(--tp-dirt-deep);
   color: var(--tp-parchment);
-}
-
-.modal__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 6px;
-  position: sticky;
-  bottom: 0;
-  padding-top: 8px;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    var(--tp-dirt) 28%
-  );
 }
 
 /* —— Install —— */

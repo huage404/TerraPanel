@@ -83,7 +83,7 @@ export function CreateWorldModal({
         return
       }
 
-      const scrollable = target.closest('.modal__form')
+      const scrollable = target.closest('.modal__body')
       if (!scrollable) {
         event.preventDefault()
       }
@@ -211,6 +211,7 @@ export function CreateWorldModal({
         </div>
 
         <form className="modal__form" onSubmit={handleSubmit}>
+          <div className="modal__body">
           <div className="field">
             <span>世界文件（可选）</span>
             <input
@@ -401,6 +402,7 @@ export function CreateWorldModal({
               </label>
             </>
           )}
+          </div>
 
           <div className="modal__actions">
             <button
